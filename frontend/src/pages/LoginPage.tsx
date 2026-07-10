@@ -27,38 +27,71 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-900 via-brand-700 to-brand-500">
-      <div className="w-full max-w-sm bg-white/95 backdrop-blur rounded-2xl shadow-2xl p-8">
-        <div className="mb-6 text-center">
-          <div className="w-12 h-12 rounded-xl bg-brand-600 mx-auto mb-3 flex items-center justify-center text-white font-bold text-xl">
-            T
+    <div className="min-h-screen flex bg-blueprint-900">
+      {/* Linke Spalte: Marke / Kontext, blaupausenartige Textur */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-blueprint text-paper flex-col justify-between p-12 blueprint-grid">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-md bg-conduit-500 flex items-center justify-center font-display font-bold text-sm">
+            W
           </div>
-          <h1 className="text-xl font-semibold text-slate-800">Tiefbau-Infrastruktur</h1>
-          <p className="text-sm text-slate-500">Anmeldung erforderlich</p>
+          <span className="font-display font-semibold text-lg tracking-tight">WieNet</span>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-sm text-slate-600">E-Mail</label>
-            <input
-              type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
-            />
+
+        <div className="max-w-md survey-marks pl-1">
+          <p className="text-xs uppercase tracking-widest text-signal-300 font-medium mb-3">
+            Tiefbau- &amp; Glasfaser-Infrastruktur
+          </p>
+          <h1 className="font-display text-3xl font-semibold leading-tight mb-4">
+            Jede Trasse, jedes Rohr, jede Faser — an ihrem realen Ort.
+          </h1>
+          <p className="text-sm text-ink-100/70 leading-relaxed">
+            Kartenbasierte Verwaltung von Trassen, Rohrbelegung, Netzschema und
+            Bauabschnitten, organisiert nach Gebiet, Cluster und Projekt.
+          </p>
+        </div>
+
+        <p className="text-xs text-ink-100/40 font-data">wienet · self-hosted</p>
+      </div>
+
+      {/* Rechte Spalte: Anmeldung */}
+      <div className="flex-1 flex items-center justify-center bg-paper px-6">
+        <div className="w-full max-w-sm">
+          <div className="lg:hidden flex items-center gap-3 mb-8">
+            <div className="w-9 h-9 rounded-md bg-conduit-500 flex items-center justify-center text-white font-display font-bold text-sm">
+              W
+            </div>
+            <span className="font-display font-semibold text-lg text-ink-900">WieNet</span>
           </div>
-          <div>
-            <label className="text-sm text-slate-600">Passwort</label>
-            <input
-              type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
-            />
-          </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            type="submit" disabled={loading}
-            className="w-full bg-brand-600 hover:bg-brand-700 text-white rounded-lg py-2 font-medium transition disabled:opacity-60"
-          >
-            {loading ? "Anmelden…" : "Anmelden"}
-          </button>
-        </form>
+
+          <h2 className="font-display text-xl font-semibold text-ink-900 mb-1">Anmelden</h2>
+          <p className="text-sm text-ink-400 mb-6">Zugang zur Infrastrukturplattform.</p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-xs font-medium uppercase tracking-wide text-ink-400">E-Mail</label>
+              <input
+                type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)}
+                className="mt-1.5 w-full rounded-md border border-ink-100 bg-white px-3 py-2.5 text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-conduit-500 focus:border-conduit-500 transition"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium uppercase tracking-wide text-ink-400">Passwort</label>
+              <input
+                type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
+                className="mt-1.5 w-full rounded-md border border-ink-100 bg-white px-3 py-2.5 text-sm text-ink-900 focus:outline-none focus:ring-2 focus:ring-conduit-500 focus:border-conduit-500 transition"
+              />
+            </div>
+            {error && (
+              <p className="text-sm text-conduit-700 bg-conduit-50 border border-conduit-100 rounded-md px-3 py-2">{error}</p>
+            )}
+            <button
+              type="submit" disabled={loading}
+              className="w-full bg-ink-900 hover:bg-blueprint text-white rounded-md py-2.5 text-sm font-medium transition disabled:opacity-60"
+            >
+              {loading ? "Anmelden…" : "Anmelden"}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

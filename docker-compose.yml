@@ -28,7 +28,6 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-https://tiefbau.wsmronline.uk,http://localhost:8093}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@wsmronline.uk}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin_dev_password}
-      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
     depends_on:
       db:
         condition: service_healthy

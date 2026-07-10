@@ -32,10 +32,10 @@ export default function Sidebar({ onSelectSearchResult }: { onSelectSearchResult
   }
 
   return (
-    <aside className="w-72 shrink-0 h-full bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 overflow-y-auto">
-      <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+    <aside className="w-72 shrink-0 h-full bg-white dark:bg-slate-800 border-r border-ink-100 dark:border-slate-700 overflow-y-auto">
+      <div className="p-4 border-b border-ink-100 dark:border-slate-700">
         <form onSubmit={handleSearch}>
-          <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Suche</label>
+          <label className="text-xs font-medium text-ink-400 uppercase tracking-wide">Suche</label>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -43,17 +43,17 @@ export default function Sidebar({ onSelectSearchResult }: { onSelectSearchResult
             className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </form>
-        {searching && <p className="text-xs text-slate-400 mt-2">Suche läuft…</p>}
+        {searching && <p className="text-xs text-ink-400 mt-2">Suche läuft…</p>}
         {results.length > 0 && (
           <ul className="mt-2 space-y-1 max-h-56 overflow-y-auto">
             {results.map((r) => (
               <li key={r.id}>
                 <button
                   onClick={() => onSelectSearchResult(r.typ, r.id, r.geometrie)}
-                  className="w-full text-left text-sm px-2 py-1.5 rounded-md hover:bg-brand-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
+                  className="w-full text-left text-sm px-2 py-1.5 rounded-md hover:bg-brand-50 dark:hover:bg-slate-700 text-ink-600 dark:text-slate-200"
                 >
                   <span className="font-medium">{r.name}</span>
-                  <span className="text-xs text-slate-400 ml-1">({r.typ})</span>
+                  <span className="text-xs text-ink-400 ml-1">({r.typ})</span>
                 </button>
               </li>
             ))}
@@ -62,7 +62,7 @@ export default function Sidebar({ onSelectSearchResult }: { onSelectSearchResult
       </div>
 
       <div className="p-4">
-        <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">Ebenen</p>
+        <p className="text-xs font-medium text-ink-400 uppercase tracking-wide mb-2">Ebenen</p>
         <ul className="space-y-2">
           {LAYERS.map((l) => (
             <li key={l.key} className="flex items-center gap-2">
@@ -79,9 +79,9 @@ export default function Sidebar({ onSelectSearchResult }: { onSelectSearchResult
         </ul>
       </div>
 
-      <div className="p-4 border-t border-slate-200 dark:border-slate-700">
-        <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">Legende</p>
-        <ul className="text-xs space-y-1.5 text-slate-500 dark:text-slate-400">
+      <div className="p-4 border-t border-ink-100 dark:border-slate-700">
+        <p className="text-xs font-medium text-ink-400 uppercase tracking-wide mb-2">Legende</p>
+        <ul className="text-xs space-y-1.5 text-ink-400 dark:text-slate-400">
           <li className="flex items-center gap-2"><span className="w-4 h-0.5 bg-green-600 inline-block" /> Aktiv (durchgezogen)</li>
           <li className="flex items-center gap-2"><span className="w-4 h-0.5 border-t-2 border-dashed border-slate-500 inline-block" /> Geplant (gestrichelt)</li>
           <li className="flex items-center gap-2"><span className="w-4 h-0.5 bg-slate-300 inline-block" /> Stillgelegt (ausgegraut)</li>

@@ -63,9 +63,12 @@ Nach dem Start ist WieNet erreichbar unter: **http://<Server-IP>:8093**
 Beim ersten Start passiert automatisch:
 1. PostgreSQL/PostGIS wird hochgefahren (Healthcheck wartet darauf)
 2. Alembic-Migrationen (`0001`, `0002`) legen das komplette Schema an
-3. Ein Admin-Benutzer wird angelegt (`ADMIN_EMAIL` / `ADMIN_PASSWORD` aus `.env`)
-4. Falls `SEED_DEMO_DATA=true`: realistische Demodaten werden eingespielt
-   (Netzstruktur, Trassen/Rohre/Kabel, 2 Gebiete, 5 Cluster, 3 Projekte, Bauabschnitte)
+3. Ein Admin-Benutzer wird angelegt (`ADMIN_EMAIL` / `ADMIN_PASSWORD` aus `.env`),
+   mit erzwungener Passwortänderung beim ersten Login
+
+Die Datenbank ist danach **leer** – es werden keinerlei Demo- oder Testdaten
+angelegt. Trassen, Schächte, Kabel, Gebiete, Cluster und Projekte werden über
+den Import-Assistenten oder manuell über die Admin-Oberfläche erfasst.
 
 ## Enthaltene Funktionen
 

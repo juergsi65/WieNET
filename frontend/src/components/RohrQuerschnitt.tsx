@@ -43,16 +43,16 @@ export default function RohrQuerschnitt({ trasseId }: { trasseId: string }) {
       .finally(() => setLoading(false));
   }, [trasseId]);
 
-  if (loading) return <div className="text-sm text-slate-500 p-4">Rohrbelegung wird geladen…</div>;
-  if (verbaende.length === 0) return <div className="text-sm text-slate-500 p-4">Kein Rohrverband auf dieser Trasse hinterlegt.</div>;
+  if (loading) return <div className="text-sm text-ink-400 p-4">Rohrbelegung wird geladen…</div>;
+  if (verbaende.length === 0) return <div className="text-sm text-ink-400 p-4">Kein Rohrverband auf dieser Trasse hinterlegt.</div>;
 
   return (
     <div className="space-y-6">
       {verbaende.map((rv) => {
         const positions = ringLayout(rv.rohre.length);
         return (
-          <div key={rv.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">{rv.bezeichnung}</h4>
+          <div key={rv.id} className="bg-white dark:bg-slate-800 rounded-lg border border-ink-100 dark:border-slate-700 p-4">
+            <h4 className="text-sm font-semibold text-ink-600 dark:text-slate-200 mb-2">{rv.bezeichnung}</h4>
             <div className="flex gap-4 items-start flex-wrap">
               <svg viewBox="-100 -100 200 200" className="w-48 h-48 shrink-0">
                 <circle cx={0} cy={0} r={90} fill="none" stroke="#cbd5e1" strokeWidth={1.5} strokeDasharray="3,3" />
@@ -90,7 +90,7 @@ export default function RohrQuerschnitt({ trasseId }: { trasseId: string }) {
               <div className="flex-1 min-w-[200px]">
                 {hovered ? (
                   <div className="text-sm">
-                    <p className="font-medium text-slate-800 dark:text-slate-100">Rohr {hovered.rohr.nummer} · {STATUS_LABEL[hovered.rohr.status]}</p>
+                    <p className="font-medium text-ink-900 dark:text-slate-100">Rohr {hovered.rohr.nummer} · {STATUS_LABEL[hovered.rohr.status]}</p>
                     <p className="text-slate-500">Durchmesser: {hovered.rohr.durchmesser_mm ?? "–"} mm · {hovered.rohr.typ ?? "–"}</p>
                     {hovered.kabel ? (
                       <div className="mt-2 space-y-0.5">
@@ -99,7 +99,7 @@ export default function RohrQuerschnitt({ trasseId }: { trasseId: string }) {
                         <p><span className="text-slate-400">Fasern:</span> {hovered.kabel.belegte_fasern}/{hovered.kabel.fasernanzahl ?? "–"} belegt</p>
                       </div>
                     ) : (
-                      <p className="text-green-600 mt-2">Rohr ist frei</p>
+                      <p className="text-signal-600 mt-2">Rohr ist frei</p>
                     )}
                   </div>
                 ) : (
@@ -112,7 +112,7 @@ export default function RohrQuerschnitt({ trasseId }: { trasseId: string }) {
 
             {/* Lineare Belegungsdarstellung entlang der Trasse */}
             <div className="mt-4">
-              <p className="text-xs text-slate-400 mb-1">Belegung entlang der Trasse</p>
+              <p className="text-xs text-ink-400 mb-1">Belegung entlang der Trasse</p>
               <div className="space-y-1">
                 {rv.rohre.map((rb) => (
                   <div key={rb.rohr.id} className="flex items-center gap-2 text-xs">
@@ -142,7 +142,7 @@ export default function RohrQuerschnitt({ trasseId }: { trasseId: string }) {
 
       {selected && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setSelected(null)}>
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 w-96 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 w-96 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-semibold text-lg mb-3">Rohr {selected.rohr.nummer} Details</h3>
             <dl className="text-sm space-y-1.5">
               <div className="flex justify-between"><dt className="text-slate-400">Status</dt><dd>{STATUS_LABEL[selected.rohr.status]}</dd></div>

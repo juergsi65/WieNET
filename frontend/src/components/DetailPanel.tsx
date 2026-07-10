@@ -9,10 +9,10 @@ interface Props {
 }
 
 const STATUS_BADGE: Record<string, string> = {
-  aktiv: "bg-green-100 text-green-700",
+  aktiv: "bg-signal-100 text-signal-700",
   geplant: "bg-slate-100 text-slate-600",
   stillgelegt: "bg-slate-200 text-slate-500",
-  gestoert: "bg-red-100 text-red-700",
+  gestoert: "bg-conduit-100 text-conduit-700",
 };
 
 export default function DetailPanel({ typ, id, onClose }: Props) {
@@ -27,10 +27,10 @@ export default function DetailPanel({ typ, id, onClose }: Props) {
   }, [typ, id]);
 
   return (
-    <aside className="w-96 shrink-0 h-full bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 overflow-y-auto">
-      <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-4 flex items-center justify-between">
-        <h3 className="font-semibold text-slate-800 dark:text-slate-100">Objektdetails</h3>
-        <button onClick={onClose} className="text-slate-400 hover:text-slate-700 text-xl leading-none">×</button>
+    <aside className="w-96 shrink-0 h-full bg-white dark:bg-slate-800 border-l border-ink-100 dark:border-slate-700 overflow-y-auto">
+      <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-ink-100 dark:border-slate-700 p-4 flex items-center justify-between">
+        <h3 className="font-semibold text-ink-900 dark:text-slate-100">Objektdetails</h3>
+        <button onClick={onClose} className="text-ink-400 hover:text-ink-600 text-xl leading-none">×</button>
       </div>
 
       {loading && <div className="p-4 text-sm text-slate-500">Wird geladen…</div>}
@@ -38,7 +38,7 @@ export default function DetailPanel({ typ, id, onClose }: Props) {
       {!loading && data && (
         <div className="p-4 space-y-4">
           <div>
-            <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{data.name}</h4>
+            <h4 className="text-lg font-semibold text-ink-900 dark:text-slate-100">{data.name}</h4>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-xs uppercase tracking-wide text-slate-400">{data.typ}</span>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_BADGE[data.status] ?? "bg-slate-100"}`}>
@@ -64,7 +64,7 @@ export default function DetailPanel({ typ, id, onClose }: Props) {
 
           {data.notizen && (
             <div>
-              <p className="text-xs text-slate-400 mb-1">Notizen</p>
+              <p className="text-xs text-ink-400 mb-1">Notizen</p>
               <p className="text-sm text-slate-600 dark:text-slate-300">{data.notizen}</p>
             </div>
           )}

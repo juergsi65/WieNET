@@ -22,8 +22,8 @@ const NAV = [
 export default function AdminLayout() {
   return (
     <div className="flex-1 flex overflow-hidden">
-      <aside className="w-56 shrink-0 h-full bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 p-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 px-2 mb-2">Administration</p>
+      <aside className="w-56 shrink-0 h-full bg-white dark:bg-slate-800 border-r border-ink-100 dark:border-slate-700 p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-400 px-2 mb-2">Administration</p>
         <nav className="space-y-1">
           {NAV.map((item) => (
             <NavLink

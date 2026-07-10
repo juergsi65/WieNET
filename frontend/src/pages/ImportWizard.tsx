@@ -62,8 +62,8 @@ export default function ImportWizard() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto overflow-y-auto h-full">
-      <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-1">Datenimport</h2>
-      <p className="text-sm text-slate-500 mb-6">CSV, Excel oder GeoJSON importieren – mit Vorschau und Validierung.</p>
+      <h2 className="text-xl font-semibold text-ink-900 dark:text-slate-100 mb-1">Datenimport</h2>
+      <p className="text-sm text-ink-400 mb-6">CSV, Excel oder GeoJSON importieren – mit Vorschau und Validierung.</p>
 
       <div className="flex gap-2 mb-6 text-xs">
         {(["datei", "vorschau", "zuordnung", "ergebnis"] as Step[]).map((s, i) => (
@@ -73,17 +73,17 @@ export default function ImportWizard() {
         ))}
       </div>
 
-      {error && <div className="mb-4 text-sm text-red-600 bg-red-50 rounded-lg p-3">{error}</div>}
+      {error && <div className="mb-4 text-sm text-conduit-600 bg-red-50 rounded-lg p-3">{error}</div>}
 
       {step === "datei" && (
-        <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-10 text-center">
-          <p className="text-sm text-slate-500 mb-3">CSV, Excel (.xlsx) oder GeoJSON auswählen</p>
+        <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-10 text-center">
+          <p className="text-sm text-ink-400 mb-3">CSV, Excel (.xlsx) oder GeoJSON auswählen</p>
           <input
             type="file" accept=".csv,.xlsx,.xls,.geojson,.json"
             onChange={(e) => e.target.files?.[0] && handleFileSelected(e.target.files[0])}
             className="mx-auto text-sm"
           />
-          {loading && <p className="text-sm text-slate-400 mt-3">Datei wird analysiert…</p>}
+          {loading && <p className="text-sm text-ink-400 mt-3">Datei wird analysiert…</p>}
         </div>
       )}
 
@@ -92,7 +92,7 @@ export default function ImportWizard() {
           <p className="text-sm text-slate-600 dark:text-slate-300 mb-2">
             {preview.anzahl_zeilen} Datensätze erkannt. Erste Zeilen zur Kontrolle:
           </p>
-          <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg mb-4">
+          <div className="overflow-x-auto border border-ink-100 dark:border-slate-700 rounded-lg mb-4">
             <table className="text-xs w-full">
               <thead className="bg-slate-50 dark:bg-slate-700">
                 <tr>{spalten.map((c) => <th key={c} className="text-left px-2 py-1.5 font-medium">{c}</th>)}</tr>
@@ -153,7 +153,7 @@ export default function ImportWizard() {
             {result.fehler.length > 0 && ` ${result.fehler.length} Zeilen mit Fehlern übersprungen.`}
           </div>
           {result.fehler.length > 0 && (
-            <ul className="text-xs text-slate-500 space-y-1 max-h-48 overflow-y-auto">
+            <ul className="text-xs text-ink-400 space-y-1 max-h-48 overflow-y-auto">
               {result.fehler.map((f: any, i: number) => (
                 <li key={i}>Zeile {f.zeile}: {f.fehler}</li>
               ))}

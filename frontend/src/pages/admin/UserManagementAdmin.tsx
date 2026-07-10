@@ -71,7 +71,7 @@ export default function UserManagementAdmin() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-6">Benutzerverwaltung</h2>
+      <h2 className="text-xl font-semibold text-ink-900 dark:text-slate-100 mb-6">Benutzerverwaltung</h2>
 
       {tempPassword && (
         <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
@@ -80,7 +80,7 @@ export default function UserManagementAdmin() {
         </div>
       )}
 
-      <form onSubmit={handleCreate} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 mb-6 grid grid-cols-2 gap-3">
+      <form onSubmit={handleCreate} className="bg-white dark:bg-slate-800 rounded-lg border border-ink-100 dark:border-slate-700 p-4 mb-6 grid grid-cols-2 gap-3">
         <input required placeholder="Vorname" value={form.vorname} onChange={(e) => setForm({ ...form, vorname: e.target.value })}
                className="rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 px-3 py-2 text-sm" />
         <input required placeholder="Nachname" value={form.nachname} onChange={(e) => setForm({ ...form, nachname: e.target.value })}
@@ -97,13 +97,13 @@ export default function UserManagementAdmin() {
         <button type="submit" className="col-span-2 bg-brand-600 text-white rounded-lg py-2 text-sm font-medium">Benutzer anlegen</button>
       </form>
 
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700">
+      <div className="bg-white dark:bg-slate-800 rounded-lg border border-ink-100 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700">
         {users.map((u) => (
           <div key={u.id} className="px-4 py-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
-                  {u.full_name} <span className="text-slate-400 font-normal">· {u.email}</span>
+                <p className="text-sm font-medium text-ink-900 dark:text-slate-100">
+                  {u.full_name} <span className="text-ink-400 font-normal">· {u.email}</span>
                 </p>
                 <p className="text-xs text-slate-400">
                   {ROLES.find((r) => r.value === u.role)?.label} {!u.is_active && "· deaktiviert"}
@@ -115,10 +115,10 @@ export default function UserManagementAdmin() {
                 <button onClick={() => setPermissionUser(permissionUser?.id === u.id ? null : u)} className="text-brand-600 hover:underline">
                   Cluster-Rechte
                 </button>
-                <button onClick={() => handleGeneratePassword(u)} className="text-slate-500 hover:underline">
+                <button onClick={() => handleGeneratePassword(u)} className="text-ink-400 hover:underline">
                   Passwort zurücksetzen
                 </button>
-                <button onClick={() => handleToggleActive(u)} className={u.is_active ? "text-red-500 hover:underline" : "text-green-600 hover:underline"}>
+                <button onClick={() => handleToggleActive(u)} className={u.is_active ? "text-red-500 hover:underline" : "text-signal-600 hover:underline"}>
                   {u.is_active ? "Deaktivieren" : "Reaktivieren"}
                 </button>
               </div>

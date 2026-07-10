@@ -4,9 +4,9 @@ import { adminClusterApi } from "../../lib/api";
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3">
-      <p className="text-xs text-slate-400 uppercase tracking-wide">{label}</p>
-      <p className="text-xl font-semibold text-slate-800 dark:text-slate-100 mt-0.5">{value}</p>
+    <div className="bg-white dark:bg-slate-800 rounded-lg border border-ink-100 dark:border-slate-700 p-3">
+      <p className="text-xs text-ink-400 uppercase tracking-wide">{label}</p>
+      <p className="text-xl font-semibold text-ink-900 dark:text-slate-100 mt-0.5">{value}</p>
     </div>
   );
 }
@@ -28,10 +28,10 @@ export default function ClusterDetail() {
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center gap-3 mb-1">
         <span className="w-3 h-3 rounded-full" style={{ backgroundColor: cluster.farbe }} />
-        <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">{cluster.name}</h2>
+        <h2 className="text-xl font-semibold text-ink-900 dark:text-slate-100">{cluster.name}</h2>
         <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600">{cluster.status}</span>
       </div>
-      <p className="text-sm text-slate-500 mb-6">{cluster.typ} {cluster.nummer && `· ${cluster.nummer}`}</p>
+      <p className="text-sm text-ink-400 mb-6">{cluster.typ} {cluster.nummer && `· ${cluster.nummer}`}</p>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <StatCard label="Fläche" value={stats.flaeche_m2 ? `${(stats.flaeche_m2 / 10000).toFixed(2)} ha` : "–"} />
@@ -48,8 +48,8 @@ export default function ClusterDetail() {
         <StatCard label="Bauabschnitte offen/fertig" value={`${stats.bauabschnitte_geplant} / ${stats.bauabschnitte_abgeschlossen}`} />
       </div>
 
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-        <p className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">Ausbauziel</p>
+      <div className="bg-white dark:bg-slate-800 rounded-lg border border-ink-100 dark:border-slate-700 p-4">
+        <p className="text-sm font-medium text-ink-600 dark:text-slate-200 mb-2">Ausbauziel</p>
         <div className="flex items-center gap-3">
           <div className="flex-1 h-3 rounded bg-slate-100 dark:bg-slate-700 overflow-hidden">
             <div
@@ -57,7 +57,7 @@ export default function ClusterDetail() {
               style={{ width: `${cluster.ausbauziel ? Math.min(100, 100 * cluster.anzahl_aktive_anschluesse / cluster.ausbauziel) : 0}%` }}
             />
           </div>
-          <span className="text-sm text-slate-500 whitespace-nowrap">
+          <span className="text-sm text-ink-400 whitespace-nowrap">
             {cluster.anzahl_aktive_anschluesse} / {cluster.ausbauziel ?? "–"} aktive Anschlüsse
           </span>
         </div>

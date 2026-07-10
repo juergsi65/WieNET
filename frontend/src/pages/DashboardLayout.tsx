@@ -32,22 +32,22 @@ export default function DashboardLayout() {
 
   return (
     <div className={darkMode ? "dark" : ""}>
-      <div className="h-screen w-screen flex flex-col bg-slate-50 dark:bg-slate-900">
-        {/* Obere Navigationsleiste */}
-        <header className="h-14 shrink-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center px-4 gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white font-bold text-sm">T</div>
-            <span className="font-semibold text-slate-800 dark:text-slate-100 hidden sm:inline">Tiefbau-Infrastruktur</span>
+      <div className="h-screen w-screen flex flex-col bg-paper dark:bg-slate-900">
+        {/* Obere Navigationsleiste - dunkles Blueprint-Design */}
+        <header className="h-14 shrink-0 bg-blueprint flex items-center px-4 gap-6 shadow-panel z-10">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-md bg-conduit-500 flex items-center justify-center text-white font-display font-bold text-sm">W</div>
+            <span className="font-display font-semibold text-paper hidden sm:inline tracking-tight">WieNet</span>
           </div>
           <nav className="flex gap-1">
             {NAV_ITEMS.map((item) => (
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
                   location.pathname === item.path
-                    ? "bg-brand-50 dark:bg-slate-700 text-brand-700 dark:text-brand-300"
-                    : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700"
+                    ? "bg-white/10 text-white"
+                    : "text-paper/60 hover:bg-white/5 hover:text-paper/90"
                 }`}
               >
                 {item.label}
@@ -56,10 +56,10 @@ export default function DashboardLayout() {
             {role === "admin" && (
               <button
                 onClick={() => navigate("/admin")}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
                   location.pathname.startsWith("/admin")
-                    ? "bg-brand-50 dark:bg-slate-700 text-brand-700 dark:text-brand-300"
-                    : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700"
+                    ? "bg-conduit-500 text-white"
+                    : "text-paper/60 hover:bg-white/5 hover:text-paper/90"
                 }`}
               >
                 Administration
@@ -67,11 +67,11 @@ export default function DashboardLayout() {
             )}
           </nav>
           <div className="ml-auto flex items-center gap-3">
-            <button onClick={toggleDarkMode} className="text-sm text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" title="Darstellung wechseln">
+            <button onClick={toggleDarkMode} className="text-sm text-paper/50 hover:text-paper transition" title="Darstellung wechseln">
               {darkMode ? "☀️" : "🌙"}
             </button>
-            <span className="text-sm text-slate-500 dark:text-slate-300 hidden md:inline">{fullName} · {role}</span>
-            <button onClick={logout} className="text-sm text-slate-400 hover:text-red-600">Abmelden</button>
+            <span className="text-sm text-paper/60 hidden md:inline font-data">{fullName} · {role}</span>
+            <button onClick={logout} className="text-sm text-paper/50 hover:text-conduit-300 transition">Abmelden</button>
           </div>
         </header>
 

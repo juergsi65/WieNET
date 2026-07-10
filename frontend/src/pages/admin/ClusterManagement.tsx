@@ -70,7 +70,7 @@ export default function ClusterManagement() {
     <div className="p-6 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Cluster</h2>
+          <h2 className="text-xl font-semibold text-ink-900 dark:text-slate-100">Cluster</h2>
           <p className="text-sm text-slate-500">Räumlich/technisch zusammengehörige Ausbau-, Bau- oder Versorgungsbereiche.</p>
         </div>
         {step === "liste" && (
@@ -79,21 +79,21 @@ export default function ClusterManagement() {
           </button>
         )}
         {step !== "liste" && (
-          <button onClick={resetWizard} className="text-sm text-slate-500 hover:text-slate-700">Abbrechen</button>
+          <button onClick={resetWizard} className="text-sm text-ink-400 hover:text-slate-700">Abbrechen</button>
         )}
       </div>
 
       {step === "zeichnen" && (
         <div>
-          <p className="text-sm text-slate-500 mb-2">Schritt 1: Cluster-Polygon auf der Karte zeichnen.</p>
-          <div className="h-[28rem] rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+          <p className="text-sm text-ink-400 mb-2">Schritt 1: Cluster-Polygon auf der Karte zeichnen.</p>
+          <div className="h-[28rem] rounded-lg overflow-hidden border border-ink-100 dark:border-slate-700">
             <PolygonDrawMap onComplete={(geo, fl) => { setGeometrie(geo); setFlaeche(fl); setStep("formular"); }} />
           </div>
         </div>
       )}
 
       {step === "formular" && (
-        <form onSubmit={handleCreate} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+        <form onSubmit={handleCreate} className="bg-white dark:bg-slate-800 rounded-lg border border-ink-100 dark:border-slate-700 p-4 space-y-3">
           <p className="text-sm text-slate-500">Schritt 2: Cluster-Stammdaten. Fläche: <strong>{(flaeche / 10000).toFixed(2)} ha</strong></p>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="grid grid-cols-2 gap-3">
@@ -125,8 +125,8 @@ export default function ClusterManagement() {
       )}
 
       {step === "zuordnung" && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-          <p className="text-sm text-slate-500 mb-3">
+        <div className="bg-white dark:bg-slate-800 rounded-lg border border-ink-100 dark:border-slate-700 p-4">
+          <p className="text-sm text-ink-400 mb-3">
             Schritt 3: Das System hat folgende Objekte im Clusterpolygon gefunden. Bitte prüfen und übernehmen.
           </p>
           {vorschau.length === 0 && <p className="text-sm text-slate-400">Keine Tiefbau- oder Netzobjekte im Clusterbereich gefunden.</p>}
@@ -135,7 +135,7 @@ export default function ClusterManagement() {
               <div key={v.objekt_typ} className="flex items-center justify-between text-sm border border-slate-100 dark:border-slate-700 rounded-lg px-3 py-2">
                 <div>
                   <span className="font-medium capitalize">{v.objekt_typ}</span>
-                  <span className="text-slate-400 ml-2">{v.anzahl} gefunden</span>
+                  <span className="text-ink-400 ml-2">{v.anzahl} gefunden</span>
                 </div>
                 <div className="text-xs text-slate-500">
                   {v.davon_enthalten} vollständig enthalten · {v.davon_schneidend} schneidend
@@ -162,7 +162,7 @@ export default function ClusterManagement() {
       )}
 
       {step === "liste" && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700">
+        <div className="bg-white dark:bg-slate-800 rounded-lg border border-ink-100 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700">
           {clusters.map((c) => (
             <button
               key={c.id}
@@ -172,7 +172,7 @@ export default function ClusterManagement() {
               <div className="flex items-center gap-3">
                 <span className="w-3 h-3 rounded-full" style={{ backgroundColor: c.farbe }} />
                 <div>
-                  <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{c.name} {c.nummer && <span className="text-slate-400 font-normal">({c.nummer})</span>}</p>
+                  <p className="text-sm font-medium text-ink-900 dark:text-slate-100">{c.name} {c.nummer && <span className="text-ink-400 font-normal">({c.nummer})</span>}</p>
                   <p className="text-xs text-slate-400">{c.typ} {c.flaeche_m2 ? `· ${(c.flaeche_m2 / 10000).toFixed(1)} ha` : ""}</p>
                 </div>
               </div>

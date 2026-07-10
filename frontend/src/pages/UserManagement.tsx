@@ -46,9 +46,9 @@ export default function UserManagement() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto overflow-y-auto h-full">
-      <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-6">Benutzerverwaltung</h2>
+      <h2 className="text-xl font-semibold text-ink-900 dark:text-slate-100 mb-6">Benutzerverwaltung</h2>
 
-      <form onSubmit={handleCreate} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 mb-6 grid grid-cols-2 gap-3">
+      <form onSubmit={handleCreate} className="bg-white dark:bg-slate-800 rounded-lg border border-ink-100 dark:border-slate-700 p-4 mb-6 grid grid-cols-2 gap-3">
         <input required placeholder="Name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })}
                className="rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 px-3 py-2 text-sm" />
         <input required type="email" placeholder="E-Mail" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -63,11 +63,11 @@ export default function UserManagement() {
         <button type="submit" className="col-span-2 bg-brand-600 text-white rounded-lg py-2 text-sm font-medium">Benutzer anlegen</button>
       </form>
 
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700">
+      <div className="bg-white dark:bg-slate-800 rounded-lg border border-ink-100 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700">
         {users.map((u) => (
           <div key={u.id} className="flex items-center justify-between px-4 py-3">
             <div>
-              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{u.full_name} <span className="text-slate-400 font-normal">· {u.email}</span></p>
+              <p className="text-sm font-medium text-ink-900 dark:text-slate-100">{u.full_name} <span className="text-ink-400 font-normal">· {u.email}</span></p>
               <p className="text-xs text-slate-400">{ROLES.find((r) => r.value === u.role)?.label} {!u.is_active && "· deaktiviert"}</p>
             </div>
             {u.is_active && (

@@ -102,7 +102,7 @@ export default function PolygonDrawMap({ onComplete, center = [14.2858, 48.3069]
     <div className="relative w-full h-full">
       <div ref={mapContainer} className="w-full h-full" />
       <div className="absolute top-3 left-3 bg-white/95 dark:bg-slate-800/95 rounded-lg shadow-lg p-3 text-sm space-y-2 w-56">
-        <p className="font-medium text-slate-700 dark:text-slate-200">Polygon zeichnen</p>
+        <p className="font-medium text-ink-600 dark:text-slate-200">Polygon zeichnen</p>
         <p className="text-xs text-slate-500">Klicken zum Setzen von Punkten. Mindestens 3 Punkte nötig.</p>
         <div className="text-xs space-y-0.5">
           <p>Fläche: <strong>{(flaeche / 10000).toFixed(3)} ha</strong></p>

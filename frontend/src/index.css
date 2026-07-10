@@ -11,11 +11,74 @@ html, body, #root {
   box-sizing: border-box;
 }
 
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #14171A;
+}
+
+h1, h2, h3, .font-display {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.font-data {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-feature-settings: "tnum" 1;
+}
+
 .maplibregl-popup-content {
-  border-radius: 10px !important;
+  border-radius: 8px !important;
   padding: 12px 14px !important;
-  font-family: inherit;
+  font-family: 'Inter', system-ui, sans-serif;
+  box-shadow: 0 2px 4px rgba(20,23,26,0.08), 0 8px 24px rgba(20,23,26,0.12) !important;
 }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #b0b6bb; border-radius: 4px; }
+
+/* Sichtbarer Fokusring für Tastaturnavigation (Barrierefreiheit) */
+a:focus-visible, button:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible {
+  outline: 2px solid #E8590C;
+  outline-offset: 2px;
+}
+
+/* Signatur-Element: Vermessungs-Fadenkreuzmarken an den Ecken von Panels -
+   angelehnt an echte Vermessungspunkte im Tiefbau. Dezent, nur an wenigen
+   Stellen eingesetzt (Kennzahlkarten, Login, Kartenlegende). */
+.survey-marks {
+  position: relative;
+}
+.survey-marks::before,
+.survey-marks::after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  pointer-events: none;
+  opacity: 0.35;
+}
+.survey-marks::before {
+  top: 6px;
+  left: 6px;
+  border-left: 1.5px solid currentColor;
+  border-top: 1.5px solid currentColor;
+}
+.survey-marks::after {
+  bottom: 6px;
+  right: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+}
+
+/* Feines Blaupausen-Raster als ambiente Textur (nur Login-Hintergrund) */
+.blueprint-grid {
+  background-image:
+    linear-gradient(rgba(247,246,243,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(247,246,243,0.06) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

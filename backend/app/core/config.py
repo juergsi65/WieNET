@@ -9,7 +9,6 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "https://tiefbau.wsmronline.uk"
     ADMIN_EMAIL: str = "admin@example.com"
     ADMIN_PASSWORD: str = "changeme"
-    SEED_DEMO_DATA: bool = True
 
     @property
     def cors_origin_list(self) -> list[str]:

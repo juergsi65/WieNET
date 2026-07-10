@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { adminAuditApi } from "../../lib/api";
 
 const ERGEBNIS_FARBE: Record<string, string> = {
-  erfolg: "bg-green-100 text-green-700",
-  fehler: "bg-red-100 text-red-700",
-  verweigert: "bg-amber-100 text-amber-700",
+  erfolg: "bg-signal-100 text-signal-700",
+  fehler: "bg-conduit-100 text-conduit-700",
+  verweigert: "bg-conduit-100 text-conduit-700",
 };
 
 export default function AuditLogView() {
@@ -27,7 +27,7 @@ export default function AuditLogView() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Audit-Log</h2>
+        <h2 className="text-xl font-semibold text-ink-900 dark:text-slate-100">Audit-Log</h2>
         <input
           placeholder="Nach Aktion filtern (z.B. login, cluster_erstellt)"
           value={aktionFilter}
@@ -36,7 +36,7 @@ export default function AuditLogView() {
         />
       </div>
 
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-x-auto">
+      <div className="bg-white dark:bg-slate-800 rounded-lg border border-ink-100 dark:border-slate-700 overflow-x-auto">
         <table className="text-xs w-full">
           <thead className="bg-slate-50 dark:bg-slate-700 text-left">
             <tr>

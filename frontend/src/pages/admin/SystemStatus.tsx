@@ -5,7 +5,7 @@ function Row({ label, value }: { label: string; value: any }) {
   return (
     <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700 text-sm">
       <span className="text-slate-500">{label}</span>
-      <span className="font-medium text-slate-800 dark:text-slate-100">{value ?? "–"}</span>
+      <span className="font-medium text-ink-900 dark:text-slate-100">{value ?? "–"}</span>
     </div>
   );
 }
@@ -21,8 +21,8 @@ export default function SystemStatus() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-6">Systemstatus</h2>
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+      <h2 className="text-xl font-semibold text-ink-900 dark:text-slate-100 mb-6">Systemstatus</h2>
+      <div className="bg-white dark:bg-slate-800 rounded-lg border border-ink-100 dark:border-slate-700 p-4">
         <Row label="Softwareversion" value={status.version} />
         <Row label="Frontend" value={status.frontend} />
         <Row label="API" value={status.api} />

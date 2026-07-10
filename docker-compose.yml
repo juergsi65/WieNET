@@ -1,0 +1,67 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: wienet_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-wienet}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wienet_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-wienet}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wienet} -d ${POSTGRES_DB:-wienet}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  backend:
+    build: ./backend
+    container_name: wienet_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://wienet:wienet_dev_password@db:5432/wienet}
+      SECRET_KEY: ${SECRET_KEY:-please_change_this_secret_key_in_production_0000}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-480}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://tiefbau.wsmronline.uk,http://localhost:8093}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@wsmronline.uk}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin_dev_password}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads_data:/app/uploads
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - internal
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api
+    container_name: wienet_frontend
+    restart: unless-stopped
+    ports:
+      - "8093:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - internal
+
+volumes:
+  db_data:
+  uploads_data:
+
+networks:
+  internal:
+    driver: bridge

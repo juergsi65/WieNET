@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { objektApi } from "../lib/api";
 import RohrQuerschnitt from "./RohrQuerschnitt";
+import { SkeletonLine } from "./Skeleton";
 
 interface Props {
   typ: string;
@@ -27,14 +28,33 @@ export default function DetailPanel({ typ, id, onClose, canEdit = false }: Props
     objektApi.detail(typ, id).then((res) => setData(res.data)).finally(() => setLoading(false));
   }, [typ, id]);
 
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
-    <aside className="w-96 shrink-0 h-full bg-white dark:bg-slate-800 border-l border-ink-100 dark:border-slate-700 overflow-y-auto">
+    <aside className="w-96 shrink-0 h-full bg-white dark:bg-slate-800 border-l border-ink-100 dark:border-slate-700 overflow-y-auto animate-panel-in">
       <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-ink-100 dark:border-slate-700 p-4 flex items-center justify-between">
-        <h3 className="font-semibold text-ink-900 dark:text-slate-100">Objektdetails</h3>
-        <button onClick={onClose} className="text-ink-400 hover:text-ink-600 text-xl leading-none">×</button>
+        <h3 className="font-display font-semibold text-ink-900 dark:text-slate-100">Objektdetails</h3>
+        <button onClick={onClose} className="text-ink-400 hover:text-ink-600 text-xl leading-none w-7 h-7 rounded-md hover:bg-paper-dim dark:hover:bg-slate-700 transition flex items-center justify-center" title="Schließen (Esc)">×</button>
       </div>
 
-      {loading && <div className="p-4 text-sm text-slate-500">Wird geladen…</div>}
+      {loading && (
+        <div className="p-4 space-y-3">
+          <SkeletonLine width="70%" height="1.25rem" />
+          <SkeletonLine width="40%" height="0.75rem" />
+          <div className="grid grid-cols-2 gap-2 pt-2">
+            <SkeletonLine height="0.85rem" />
+            <SkeletonLine height="0.85rem" />
+            <SkeletonLine height="0.85rem" />
+            <SkeletonLine height="0.85rem" />
+          </div>
+        </div>
+      )}
 
       {!loading && data && (
         <div className="p-4 space-y-4">

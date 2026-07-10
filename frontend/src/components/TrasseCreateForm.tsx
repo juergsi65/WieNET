@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { editApi } from "../lib/api";
+import { toast } from "../store/useToastStore";
 
 interface Props {
   laengeM: number;
@@ -37,17 +38,20 @@ export function TrasseFormModal({
         anzahl_rohre: Number(form.anzahl_rohre) || 0,
         rohr_definition: { typ: form.rohr_typ, durchmesser_mm: Number(form.rohr_durchmesser) },
       });
+      toast.success(`Trasse "${form.name}" angelegt (Planung).`);
       onCreated();
     } catch (err: any) {
-      setError(err.response?.data?.detail ?? "Trasse konnte nicht angelegt werden.");
+      const msg = err.response?.data?.detail ?? "Trasse konnte nicht angelegt werden.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={onCancel}>
-      <div className="bg-white dark:bg-slate-800 rounded-lg p-5 w-[26rem] shadow-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 animate-fade-in" onClick={onCancel}>
+      <div className="bg-white dark:bg-slate-800 rounded-lg p-5 w-[26rem] shadow-2xl max-h-[90vh] overflow-y-auto animate-modal-in" onClick={(e) => e.stopPropagation()}>
         <h3 className="font-display font-semibold text-lg text-ink-900 dark:text-slate-100 mb-1">Neue Trasse</h3>
         <p className="text-xs text-ink-400 mb-4 font-data">{laengeM.toFixed(0)} m gezeichnet</p>
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { objektApi } from "../lib/api";
+import { SkeletonCardGrid } from "../components/Skeleton";
 
 interface Stats {
   trassen_laenge_m: number;
@@ -31,7 +32,12 @@ export default function DashboardHome() {
     objektApi.dashboard().then((res) => setStats(res.data));
   }, []);
 
-  if (!stats) return <div className="p-6 text-sm text-ink-400">Kennzahlen werden geladen…</div>;
+  if (!stats) return (
+    <div className="p-6">
+      <h2 className="font-display text-xl font-semibold text-ink-900 dark:text-slate-100 mb-4">Dashboard</h2>
+      <SkeletonCardGrid count={9} />
+    </div>
+  );
 
   const objekteVorhanden =
     stats.anzahl_schaechte + stats.anzahl_muffen + stats.anzahl_hausanschluesse > 0 || stats.trassen_laenge_m > 0;
@@ -54,7 +60,7 @@ export default function DashboardHome() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in">
           <Card label="Trassenlänge" value={`${(stats.trassen_laenge_m / 1000).toFixed(2)} km`} />
           <Card label="Kabellänge" value={`${(stats.kabel_laenge_m / 1000).toFixed(2)} km`} />
           <Card label="Schächte" value={stats.anzahl_schaechte} />

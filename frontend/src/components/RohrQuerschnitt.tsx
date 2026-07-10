@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { rohrbelegungApi, editApi } from "../lib/api";
+import { toast } from "../store/useToastStore";
 
 interface RohrBelegung {
   rohr: { id: string; nummer: number; farbe: string; durchmesser_mm: number | null; typ: string | null; status: string };
@@ -146,8 +147,8 @@ export default function RohrQuerschnitt({ trasseId, canEdit = false }: { trasseI
       })}
 
       {selected && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setSelected(null)}>
-          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 w-96 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 animate-fade-in" onClick={() => setSelected(null)}>
+          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 w-96 shadow-2xl animate-modal-in" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-semibold text-lg mb-3">Rohr {selected.rohr.nummer} Details</h3>
             <dl className="text-sm space-y-1.5">
               <div className="flex justify-between"><dt className="text-slate-400">Status</dt><dd>{STATUS_LABEL[selected.rohr.status]}</dd></div>
@@ -193,9 +194,12 @@ function KabelEinziehenForm({ rohrId, onCreated }: { rohrId: string; onCreated: 
         fasernanzahl: form.fasernanzahl ? Number(form.fasernanzahl) : null,
         hersteller: form.hersteller || null, rohr_id: rohrId,
       });
+      toast.success(`Kabel "${form.bezeichnung}" eingezogen.`);
       onCreated();
     } catch (err: any) {
-      setError(err.response?.data?.detail ?? "Kabel konnte nicht angelegt werden.");
+      const msg = err.response?.data?.detail ?? "Kabel konnte nicht angelegt werden.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

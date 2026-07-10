@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAppStore } from "./store/useAppStore";
 import LoginPage from "./pages/LoginPage";
 import DashboardLayout from "./pages/DashboardLayout";
+import ToastContainer from "./components/ToastContainer";
+import ConfirmDialog from "./components/ConfirmDialog";
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const token = useAppStore((s) => s.token);
@@ -23,6 +25,8 @@ export default function App() {
           }
         />
       </Routes>
+      <ToastContainer />
+      <ConfirmDialog />
     </BrowserRouter>
   );
 }

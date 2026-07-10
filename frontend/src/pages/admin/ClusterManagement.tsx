@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { adminClusterApi, adminAreaApi, adminProjectApi } from "../../lib/api";
 import PolygonDrawMap from "../../components/PolygonDrawMap";
+import { toast } from "../../store/useToastStore";
 
 interface Cluster {
   id: string; name: string; nummer: string | null; typ: string | null; status: string;
@@ -48,13 +49,22 @@ export default function ClusterManagement() {
       setStep("zuordnung");
       load();
     } catch (e: any) {
-      setError(e.response?.data?.detail ?? "Cluster konnte nicht angelegt werden.");
+      const msg = e.response?.data?.detail ?? "Cluster konnte nicht angelegt werden.";
+      setError(msg);
+      toast.error(msg);
     }
   }
 
   async function handleZuordnungBestaetigen(typen: string[]) {
     if (!neuerClusterId) return;
-    await adminClusterApi.zuordnungBestaetigen(neuerClusterId, typen);
+    try {
+      const res = await adminClusterApi.zuordnungBestaetigen(neuerClusterId, typen);
+      const z = res.data.zusammenfassung;
+      const anzahl = Object.values(z).reduce((sum: number, v: any) => sum + (typeof v === "number" ? v : (v.enthalten ?? 0) + (v.schneidend ?? 0)), 0);
+      toast.success(`Cluster gespeichert, ${anzahl} Objekte zugeordnet.`);
+    } catch (e: any) {
+      toast.error(e.response?.data?.detail ?? "Zuordnung fehlgeschlagen.");
+    }
     resetWizard();
   }
 
@@ -154,7 +164,7 @@ export default function ClusterManagement() {
             >
               Zuordnung bestätigen
             </button>
-            <button onClick={resetWizard} className="bg-slate-100 dark:bg-slate-700 rounded-lg px-4 py-2 text-sm">
+            <button onClick={() => { toast.success("Cluster ohne Objektzuordnung gespeichert."); resetWizard(); }} className="bg-paper-dim dark:bg-slate-700 rounded-lg px-4 py-2 text-sm">
               Ohne Zuordnung übernehmen
             </button>
           </div>

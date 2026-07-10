@@ -82,7 +82,7 @@ export default function LoginPage() {
               />
             </div>
             {error && (
-              <p className="text-sm text-conduit-700 bg-conduit-50 border border-conduit-100 rounded-md px-3 py-2">{error}</p>
+              <p className="text-sm text-conduit-700 bg-conduit-50 border border-conduit-100 rounded-md px-3 py-2 animate-shake">{error}</p>
             )}
             <button
               type="submit" disabled={loading}

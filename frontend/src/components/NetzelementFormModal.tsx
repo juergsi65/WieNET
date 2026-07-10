@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { editApi } from "../lib/api";
+import { toast } from "../store/useToastStore";
 
 interface Props {
   typ: string;
@@ -31,17 +32,20 @@ export default function NetzelementFormModal({
         ports_gesamt: PORTS_TYPEN.includes(typ) && form.ports_gesamt ? Number(form.ports_gesamt) : null,
         notizen: form.notizen || null,
       });
+      toast.success(`${typLabel} "${form.name}" angelegt (Planung).`);
       onCreated();
     } catch (err: any) {
-      setError(err.response?.data?.detail ?? `${typLabel} konnte nicht angelegt werden.`);
+      const msg = err.response?.data?.detail ?? `${typLabel} konnte nicht angelegt werden.`;
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={onCancel}>
-      <div className="bg-white dark:bg-slate-800 rounded-lg p-5 w-96 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 animate-fade-in" onClick={onCancel}>
+      <div className="bg-white dark:bg-slate-800 rounded-lg p-5 w-96 shadow-2xl animate-modal-in" onClick={(e) => e.stopPropagation()}>
         <h3 className="font-display font-semibold text-lg text-ink-900 dark:text-slate-100 mb-4">Neu: {typLabel}</h3>
 
         <form onSubmit={handleSubmit} className="space-y-3">

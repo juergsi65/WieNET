@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { adminProjectApi } from "../../lib/api";
+import { toast } from "../../store/useToastStore";
 
 interface Project {
   id: string; name: string; projektnummer: string | null; projektcode: string | null;
@@ -41,8 +42,11 @@ export default function ProjectManagement() {
       setShowForm(false);
       setForm({ name: "", projektnummer: "", projektcode: "", status: "entwurf", projektart: "FTTH-Ausbau", auftraggeber: "", budget: "" });
       load();
+      toast.success(`Projekt "${form.name}" wurde angelegt.`);
     } catch (e: any) {
-      setError(e.response?.data?.detail ?? "Projekt konnte nicht angelegt werden.");
+      const msg = e.response?.data?.detail ?? "Projekt konnte nicht angelegt werden.";
+      setError(msg);
+      toast.error(msg);
     }
   }
 

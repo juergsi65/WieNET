@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { adminAreaApi } from "../../lib/api";
 import PolygonDrawMap from "../../components/PolygonDrawMap";
+import { toast } from "../../store/useToastStore";
 
 interface Area {
   id: string; name: string; kuerzel: string | null; gebietstyp: string | null;
@@ -30,8 +31,11 @@ export default function AreaManagement() {
       setGeometrie(null);
       setForm({ name: "", kuerzel: "", gebietstyp: "Ausbaugebiet", farbe: "#0ea5e9", beschreibung: "" });
       load();
+      toast.success(`Gebiet "${form.name}" wurde angelegt.`);
     } catch (e: any) {
-      setError(e.response?.data?.detail ?? "Gebiet konnte nicht angelegt werden.");
+      const msg = e.response?.data?.detail ?? "Gebiet konnte nicht angelegt werden.";
+      setError(msg);
+      toast.error(msg);
     }
   }
 

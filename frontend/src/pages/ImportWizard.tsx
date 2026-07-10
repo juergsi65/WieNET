@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api } from "../lib/api";
+import { toast } from "../store/useToastStore";
 
 const OBJEKT_TYPEN = [
   { value: "schacht", label: "Schacht" },
@@ -51,6 +52,8 @@ export default function ImportWizard() {
       const res = await api.post("/import/commit", formData, { headers: { "Content-Type": "multipart/form-data" } });
       setResult(res.data);
       setStep("ergebnis");
+      if (res.data.erfolgreich) toast.success(`${res.data.importiert} Datensätze erfolgreich importiert.`);
+      else toast.info(`${res.data.importiert} importiert, ${res.data.fehler.length} mit Fehlern.`);
     } catch (e: any) {
       setError(e.response?.data?.detail ?? "Import fehlgeschlagen.");
     } finally {

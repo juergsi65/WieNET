@@ -118,24 +118,39 @@ export default function MapView({ onSelect, canEdit }: Props) {
       map.addSource("netzelemente", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       map.addSource("redlining-draw", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
 
-      // Trassen als Linien: gestrichelt=geplant, durchgezogen=aktiv, ausgegraut=stillgelegt
+      // Trassen als Linien. WICHTIG: line-dasharray unterstützt in MapLibre GL KEINE
+      // feature-abhängigen Ausdrücke (["get", ...]) - das kann dazu führen, dass die
+      // gesamte Ebene stillschweigend nichts mehr zeichnet. Deshalb zwei separate,
+      // per "filter" (das ist datenabhängig erlaubt) getrennte Ebenen mit jeweils
+      // einem festen, konstanten dasharray-Wert statt einer bedingten Expression.
       map.addLayer({
-        id: "trassen-linie",
+        id: "trassen-linie-solid",
         type: "line",
         source: "trassen",
+        filter: ["!=", ["get", "status"], "geplant"],
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
           "line-color": [
             "match", ["get", "status"],
             "aktiv", STATUS_COLOR.aktiv,
-            "geplant", STATUS_COLOR.geplant,
             "stillgelegt", STATUS_COLOR.stillgelegt,
             "gestoert", STATUS_COLOR.gestoert,
             "#3b82f6",
           ],
-          "line-width": ["case", ["==", ["get", "status"], "geplant"], 5, 4],
-          "line-dasharray": ["case", ["==", ["get", "status"], "geplant"], ["literal", [2.5, 1.5]], ["literal", [1, 0]]],
+          "line-width": 4,
           "line-opacity": ["case", ["==", ["get", "status"], "stillgelegt"], 0.4, 1],
+        },
+      });
+      map.addLayer({
+        id: "trassen-linie-geplant",
+        type: "line",
+        source: "trassen",
+        filter: ["==", ["get", "status"], "geplant"],
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": STATUS_COLOR.geplant,
+          "line-width": 5,
+          "line-dasharray": [2.5, 1.5],
         },
       });
 
@@ -187,11 +202,13 @@ export default function MapView({ onSelect, canEdit }: Props) {
 
       const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
 
-      map.on("click", "trassen-linie", (e) => {
-        if (toolRef.current !== "none") return;
-        const f = e.features?.[0];
-        if (!f) return;
-        onSelect("trasse", f.properties!.id);
+      ["trassen-linie-solid", "trassen-linie-geplant"].forEach((layer) => {
+        map.on("click", layer, (e) => {
+          if (toolRef.current !== "none") return;
+          const f = e.features?.[0];
+          if (!f) return;
+          onSelect("trasse", f.properties!.id);
+        });
       });
       map.on("click", "netzelemente-punkte", (e) => {
         if (toolRef.current !== "none") return;
@@ -200,7 +217,7 @@ export default function MapView({ onSelect, canEdit }: Props) {
         onSelect(f.properties!.objekt_typ === "netzelement" ? f.properties!.typ : "netzelement", f.properties!.id);
       });
 
-      ["trassen-linie", "netzelemente-punkte"].forEach((layer) => {
+      ["trassen-linie-solid", "trassen-linie-geplant", "netzelemente-punkte"].forEach((layer) => {
         map.on("mouseenter", layer, (e) => {
           if (toolRef.current !== "none") return;
           map.getCanvas().style.cursor = "pointer";
@@ -418,8 +435,10 @@ export default function MapView({ onSelect, canEdit }: Props) {
   // Layer-Sichtbarkeit je nach Sidebar-Auswahl aktualisieren
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.getLayer("trassen-linie")) return;
-    map.setLayoutProperty("trassen-linie", "visibility", activeLayers.trassen ? "visible" : "none");
+    if (!map || !map.getLayer("trassen-linie-solid")) return;
+    const vis = activeLayers.trassen ? "visible" : "none";
+    map.setLayoutProperty("trassen-linie-solid", "visibility", vis);
+    map.setLayoutProperty("trassen-linie-geplant", "visibility", vis);
   }, [activeLayers.trassen]);
 
   useEffect(() => {

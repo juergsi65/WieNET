@@ -6,7 +6,7 @@ interface Props {
   typ: string;
   typLabel: string;
   clusters: { id: string; name: string }[];
-  onCreated: () => void;
+  onCreated: (feature: any) => void;
   onCancel: () => void;
 }
 
@@ -26,14 +26,23 @@ export default function NetzelementFormModal({
     setLoading(true);
     setError(null);
     try {
-      await editApi.createNetzelement({
+      const res = await editApi.createNetzelement({
         name: form.name, typ, status: form.status, geometrie,
         cluster_id: form.cluster_id || null,
         ports_gesamt: PORTS_TYPEN.includes(typ) && form.ports_gesamt ? Number(form.ports_gesamt) : null,
         notizen: form.notizen || null,
       });
       toast.success(`${typLabel} "${form.name}" angelegt (Planung).`);
-      onCreated();
+      onCreated({
+        type: "Feature",
+        geometry: geometrie,
+        properties: {
+          id: res.data.id, name: form.name, typ, status: form.status,
+          ports_gesamt: PORTS_TYPEN.includes(typ) && form.ports_gesamt ? Number(form.ports_gesamt) : null,
+          ports_belegt: 0, belegung_pct: null, objekt_typ: "netzelement",
+          ist_planung: form.status === "geplant", erstellt_von: null, planungskennzeichen: null,
+        },
+      });
     } catch (err: any) {
       const msg = err.response?.data?.detail ?? `${typLabel} konnte nicht angelegt werden.`;
       setError(msg);

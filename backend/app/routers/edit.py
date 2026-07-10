@@ -65,7 +65,13 @@ def create_trasse(
     if geom.geom_type != "LineString":
         raise HTTPException(status_code=400, detail="Trasse benötigt eine Liniengeometrie (LineString)")
 
-    laenge_m = db.scalar(func.ST_Length(func.ST_Transform(from_shape(geom, srid=4326), 3857)))
+    try:
+        laenge_m = db.scalar(func.ST_Length(func.ST_Transform(from_shape(geom, srid=4326), 3857)))
+    except Exception:
+        # Serverseitige Längenberechnung darf die Objekterfassung nie blockieren -
+        # im Zweifel wird die Länge nachträglich korrigiert, die Trasse muss trotzdem entstehen.
+        db.rollback()
+        laenge_m = None
 
     try:
         status_enum = ObjektStatus(payload.status)
@@ -98,7 +104,12 @@ def create_trasse(
             ))
         rohrverband_id = rv.id
 
-    db.commit()
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Trasse konnte nicht gespeichert werden: {e}")
+
     log_action(db, user, "trasse_erstellt", "trasse", trasse.id, neuer_wert=payload.name,
                cluster_id=payload.cluster_id, request=request)
 
@@ -149,7 +160,11 @@ def create_netzelement(
         modell=payload.modell, notizen=payload.notizen, erstellt_von_id=user.id,
     )
     db.add(el)
-    db.commit()
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"{payload.typ} konnte nicht gespeichert werden: {e}")
     db.refresh(el)
     log_action(db, user, "netzelement_erstellt", "netzelement", el.id, neuer_wert=f"{payload.typ}:{payload.name}",
                cluster_id=payload.cluster_id, request=request)

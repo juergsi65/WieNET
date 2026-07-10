@@ -5,7 +5,7 @@ import { toast } from "../store/useToastStore";
 interface Props {
   laengeM: number;
   clusters: { id: string; name: string }[];
-  onCreated: () => void;
+  onCreated: (feature: any) => void;
   onCancel: () => void;
 }
 
@@ -27,7 +27,7 @@ export function TrasseFormModal({
     setLoading(true);
     setError(null);
     try {
-      await editApi.createTrasse({
+      const res = await editApi.createTrasse({
         name: form.name,
         typ: form.typ,
         status: form.status,
@@ -39,7 +39,16 @@ export function TrasseFormModal({
         rohr_definition: { typ: form.rohr_typ, durchmesser_mm: Number(form.rohr_durchmesser) },
       });
       toast.success(`Trasse "${form.name}" angelegt (Planung).`);
-      onCreated();
+      onCreated({
+        type: "Feature",
+        geometry: geometrie,
+        properties: {
+          id: res.data.id, name: form.name, typ: form.typ, status: form.status,
+          laenge_m: res.data.laenge_m, verlegetiefe_cm: form.verlegetiefe_cm ? Number(form.verlegetiefe_cm) : null,
+          objekt_typ: "trasse", cluster_id: form.cluster_id || null,
+          ist_planung: form.status === "geplant", erstellt_von: null, planungskennzeichen: null,
+        },
+      });
     } catch (err: any) {
       const msg = err.response?.data?.detail ?? "Trasse konnte nicht angelegt werden.";
       setError(msg);

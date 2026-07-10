@@ -37,6 +37,7 @@ export default function MapView({ onSelect, canEdit }: Props) {
   const mapRef = useRef<MLMap | null>(null);
   const activeLayers = useAppStore((s) => s.activeLayers);
   const datenFilter = useAppStore((s) => s.datenFilter);
+  const setDatenFilterStore = useAppStore((s) => s.setDatenFilter);
   const datenFilterRef = useRef(datenFilter);
   datenFilterRef.current = datenFilter;
 
@@ -52,6 +53,7 @@ export default function MapView({ onSelect, canEdit }: Props) {
   const [pendingTrasse, setPendingTrasse] = useState<any | null>(null);
   const [pendingPoint, setPendingPoint] = useState<{ typ: string; geometrie: any } | null>(null);
   const [clusters, setClusters] = useState<{ id: string; name: string }[]>([]);
+  const recentlyCreatedRef = useRef<Map<string, { sourceId: "trassen" | "netzelemente"; feature: any; until: number }>>(new Map());
 
   useEffect(() => {
     adminClusterApi.list({ with_geometry: false }).then((res) => setClusters(res.data)).catch(() => {});
@@ -280,6 +282,11 @@ export default function MapView({ onSelect, canEdit }: Props) {
     setTool(next);
     setDrawPoints([]);
     setDrawLengthM(0);
+    // Verhindert, dass neu angelegte Objekte durch einen aktiven "Nur Live"/"Nur Planung"-
+    // Filter unsichtbar bleiben: beim Zeichnen wird immer auf "Alle" zurückgesetzt.
+    if (next !== "none" && datenFilterRef.current !== "alle") {
+      setDatenFilterStore("alle");
+    }
     const map = mapRef.current;
     if (map) updateDrawSource(map, []);
   }
@@ -304,10 +311,32 @@ export default function MapView({ onSelect, canEdit }: Props) {
     setPendingTrasse({ type: "LineString", coordinates: drawPoints });
   }
 
-  function handleObjectCreated() {
+  /** Fügt ein neu angelegtes Objekt SOFORT und garantiert sichtbar in die Kartenebene ein -
+   * unabhängig vom aktiven Datenfilter, vom Zoom/Bbox-Refetch-Timing oder von Netzwerklatenz.
+   * loadData() gleicht danach zusätzlich mit dem Server ab, ist aber für die Sichtbarkeit
+   * nicht mehr die einzige Quelle. */
+  function injectFeature(sourceId: "trassen" | "netzelemente", feature: any) {
     const map = mapRef.current;
-    const flyToCoords = pendingPoint?.geometrie?.coordinates as [number, number] | undefined;
-    const flyToLine = pendingTrasse?.coordinates as [number, number][] | undefined;
+    if (!map) return;
+    // 20 Sekunden Schutzfenster: in dieser Zeit wird das Feature bei jedem Refetch
+    // erzwungen mit eingemischt, selbst wenn die Serverantwort es (noch) nicht enthält.
+    recentlyCreatedRef.current.set(feature.properties.id, { sourceId, feature, until: Date.now() + 20000 });
+    const source = map.getSource(sourceId) as maplibregl.GeoJSONSource | undefined;
+    if (!source) return;
+    const current = (source as any)._data as { type: string; features: any[] } | undefined;
+    const existing = current?.features ?? [];
+    const withoutDuplicate = existing.filter((f: any) => f.properties?.id !== feature.properties.id);
+    source.setData({ type: "FeatureCollection", features: [...withoutDuplicate, feature] });
+  }
+
+  function handleObjectCreated(feature: any) {
+    const map = mapRef.current;
+    const flyToCoords = pendingPoint ? (feature.geometry.coordinates as [number, number]) : undefined;
+    const flyToLine = pendingTrasse ? (feature.geometry.coordinates as [number, number][]) : undefined;
+    const sourceId: "trassen" | "netzelemente" = feature.properties.objekt_typ === "trasse" ? "trassen" : "netzelemente";
+
+    // Sofortige, garantierte Sichtbarkeit - unabhängig vom Datenfilter/Refetch
+    injectFeature(sourceId, feature);
 
     setPendingTrasse(null);
     setPendingPoint(null);
@@ -317,7 +346,6 @@ export default function MapView({ onSelect, canEdit }: Props) {
 
     if (map) {
       updateDrawSource(map, []);
-      loadData(map);
 
       // Garantiert zur neu angelegten Geometrie springen, damit sie sofort sichtbar ist
       if (flyToCoords) {
@@ -331,7 +359,9 @@ export default function MapView({ onSelect, canEdit }: Props) {
         );
         map.fitBounds(bounds, { padding: 80, maxZoom: 18, duration: 800 });
       }
-      // Nach dem Sprung erneut laden, da sich Zoom/Bounds geändert haben
+      // Nach dem Sprung zusätzlich mit dem Server abgleichen (überschreibt injectFeature mit
+      // den endgültigen, autoritativen Daten - das gezeichnete Objekt bleibt dabei sichtbar,
+      // da es serverseitig ja tatsächlich existiert)
       setTimeout(() => loadData(map), 900);
     }
   }
@@ -362,8 +392,24 @@ export default function MapView({ onSelect, canEdit }: Props) {
       ]);
       const trassenSrc = map.getSource("trassen") as maplibregl.GeoJSONSource;
       const netzSrc = map.getSource("netzelemente") as maplibregl.GeoJSONSource;
-      trassenSrc?.setData(trassenRes.data as any);
-      netzSrc?.setData(netzRes.data as any);
+
+      // Ablaufene Schutzfenster-Einträge entfernen
+      const now = Date.now();
+      for (const [id, entry] of recentlyCreatedRef.current) {
+        if (entry.until < now) recentlyCreatedRef.current.delete(id);
+      }
+
+      const trassenData = trassenRes.data as any;
+      const netzData = netzRes.data as any;
+      for (const entry of recentlyCreatedRef.current.values()) {
+        if (statusFilter && entry.feature.properties.status !== statusFilter) continue;
+        const target = entry.sourceId === "trassen" ? trassenData : netzData;
+        const alreadyPresent = target.features.some((f: any) => f.properties?.id === entry.feature.properties.id);
+        if (!alreadyPresent) target.features.push(entry.feature);
+      }
+
+      trassenSrc?.setData(trassenData);
+      netzSrc?.setData(netzData);
     } catch (err) {
       console.error("Kartendaten konnten nicht geladen werden", err);
     }

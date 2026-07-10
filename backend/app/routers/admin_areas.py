@@ -4,8 +4,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from geoalchemy2.shape import from_shape
-from shapely.geometry import shape
+from app.core.geometry import geojson_to_multipolygon_ewkb
 
 from app.core.database import get_db
 from app.core.audit import log_action
@@ -45,7 +44,7 @@ def create_gebiet(
     payload: GebietCreate, request: Request, db: Session = Depends(get_db),
     user: User = Depends(require_global_permission(Permission.systemeinstellungen_aendern)),
 ):
-    geom = from_shape(shape(payload.geometrie), srid=4326) if payload.geometrie else None
+    geom = geojson_to_multipolygon_ewkb(payload.geometrie) if payload.geometrie else None
     flaeche = None
     if geom is not None:
         flaeche = db.scalar(func.ST_Area(func.ST_Transform(geom, 3857)))

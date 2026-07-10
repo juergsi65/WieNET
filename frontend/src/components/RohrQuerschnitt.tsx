@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { rohrbelegungApi } from "../lib/api";
+import { rohrbelegungApi, editApi } from "../lib/api";
 
 interface RohrBelegung {
   rohr: { id: string; nummer: number; farbe: string; durchmesser_mm: number | null; typ: string | null; status: string };
@@ -29,18 +29,23 @@ function ringLayout(count: number, radius = 70) {
   return positions;
 }
 
-export default function RohrQuerschnitt({ trasseId }: { trasseId: string }) {
+export default function RohrQuerschnitt({ trasseId, canEdit = false }: { trasseId: string; canEdit?: boolean }) {
   const [verbaende, setVerbaende] = useState<Rohrverband[]>([]);
   const [hovered, setHovered] = useState<RohrBelegung | null>(null);
   const [selected, setSelected] = useState<RohrBelegung | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  function reload() {
     setLoading(true);
     rohrbelegungApi
       .fuerTrasse(trasseId)
       .then((res) => setVerbaende(res.data))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trasseId]);
 
   if (loading) return <div className="text-sm text-ink-400 p-4">Rohrbelegung wird geladen…</div>;
@@ -147,20 +152,76 @@ export default function RohrQuerschnitt({ trasseId }: { trasseId: string }) {
             <dl className="text-sm space-y-1.5">
               <div className="flex justify-between"><dt className="text-slate-400">Status</dt><dd>{STATUS_LABEL[selected.rohr.status]}</dd></div>
               <div className="flex justify-between"><dt className="text-slate-400">Durchmesser</dt><dd>{selected.rohr.durchmesser_mm ?? "–"} mm</dd></div>
-              <div className="flex justify-between"><dt className="text-slate-400">Typ</dt><dd>{selected.rohr.typ ?? "–"}</dd></div>
+              <div className="flex justify-between"><dt className="text-ink-400">Typ</dt><dd>{selected.rohr.typ ?? "–"}</dd></div>
               {selected.kabel && (
                 <>
-                  <div className="flex justify-between"><dt className="text-slate-400">Kabel</dt><dd>{selected.kabel.bezeichnung}</dd></div>
-                  <div className="flex justify-between"><dt className="text-slate-400">Kabeltyp</dt><dd>{selected.kabel.typ}</dd></div>
-                  <div className="flex justify-between"><dt className="text-slate-400">Fasern</dt><dd>{selected.kabel.belegte_fasern}/{selected.kabel.fasernanzahl}</dd></div>
-                  <div className="flex justify-between"><dt className="text-slate-400">Segment</dt><dd>{selected.segment_start_m ?? 0}–{selected.segment_ende_m ?? "?"} m</dd></div>
+                  <div className="flex justify-between"><dt className="text-ink-400">Kabel</dt><dd>{selected.kabel.bezeichnung}</dd></div>
+                  <div className="flex justify-between"><dt className="text-ink-400">Kabeltyp</dt><dd>{selected.kabel.typ}</dd></div>
+                  <div className="flex justify-between"><dt className="text-ink-400">Fasern</dt><dd>{selected.kabel.belegte_fasern}/{selected.kabel.fasernanzahl}</dd></div>
+                  <div className="flex justify-between"><dt className="text-ink-400">Segment</dt><dd>{selected.segment_start_m ?? 0}–{selected.segment_ende_m ?? "?"} m</dd></div>
                 </>
               )}
             </dl>
-            <button onClick={() => setSelected(null)} className="mt-4 w-full bg-slate-100 dark:bg-slate-700 rounded-lg py-2 text-sm">Schließen</button>
+
+            {!selected.kabel && (selected.rohr.status === "frei") && canEdit && (
+              <KabelEinziehenForm
+                rohrId={selected.rohr.id}
+                onCreated={() => { setSelected(null); reload(); }}
+              />
+            )}
+
+            <button onClick={() => setSelected(null)} className="mt-3 w-full bg-paper-dim dark:bg-slate-700 rounded-lg py-2 text-sm">Schließen</button>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+function KabelEinziehenForm({ rohrId, onCreated }: { rohrId: string; onCreated: () => void }) {
+  const [form, setForm] = useState({ bezeichnung: "", typ: "glasfaser", fasernanzahl: "24", hersteller: "" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      await editApi.createKabel({
+        bezeichnung: form.bezeichnung, typ: form.typ,
+        fasernanzahl: form.fasernanzahl ? Number(form.fasernanzahl) : null,
+        hersteller: form.hersteller || null, rohr_id: rohrId,
+      });
+      onCreated();
+    } catch (err: any) {
+      setError(err.response?.data?.detail ?? "Kabel konnte nicht angelegt werden.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-3 border-t border-ink-100 dark:border-slate-700 pt-3 space-y-2">
+      <p className="text-xs font-medium uppercase tracking-wide text-ink-400">Kabel einziehen</p>
+      {error && <p className="text-xs text-conduit-700 bg-conduit-50 rounded-md px-2 py-1.5">{error}</p>}
+      <input required placeholder="Bezeichnung" value={form.bezeichnung}
+             onChange={(e) => setForm({ ...form, bezeichnung: e.target.value })}
+             className="w-full rounded-md border border-ink-100 dark:border-slate-600 dark:bg-slate-700 px-2.5 py-1.5 text-sm" />
+      <div className="grid grid-cols-2 gap-2">
+        <select value={form.typ} onChange={(e) => setForm({ ...form, typ: e.target.value })}
+                className="rounded-md border border-ink-100 dark:border-slate-600 dark:bg-slate-700 px-2.5 py-1.5 text-sm">
+          <option value="glasfaser">Glasfaser</option>
+          <option value="kupfer">Kupfer</option>
+        </select>
+        <select value={form.fasernanzahl} onChange={(e) => setForm({ ...form, fasernanzahl: e.target.value })}
+                className="rounded-md border border-ink-100 dark:border-slate-600 dark:bg-slate-700 px-2.5 py-1.5 text-sm">
+          {[12, 24, 48, 96, 144].map((n) => <option key={n} value={n}>{n} Fasern</option>)}
+        </select>
+      </div>
+      <button type="submit" disabled={loading} className="w-full bg-ink-900 text-white rounded-md py-1.5 text-sm font-medium disabled:opacity-50">
+        {loading ? "Speichert…" : "Kabel einziehen"}
+      </button>
+    </form>
   );
 }

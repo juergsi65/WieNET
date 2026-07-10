@@ -4,12 +4,11 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from geoalchemy2.shape import from_shape
-from shapely.geometry import shape
+from app.core.geometry import geojson_to_multipolygon_ewkb
 
 from app.core.database import get_db
 from app.core.audit import log_action
-from app.core.permissions import require_global_permission
+from app.core.permissions import require_global_permission, user_accessible_cluster_ids
 from app.models.admin import (
     Cluster, Permission, ObjektClusterZuordnung, ZuordnungsRelation,
 )
@@ -39,13 +38,22 @@ def to_out(db: Session, c: Cluster, with_geom: bool = False) -> ClusterOut:
 def list_clusters(
     with_geometry: bool = True, project_id: uuid.UUID | None = None, gebiet_id: uuid.UUID | None = None,
     db: Session = Depends(get_db),
-    _user: User = Depends(require_global_permission(Permission.daten_anzeigen)),
+    user: User = Depends(require_global_permission(Permission.daten_anzeigen)),
 ):
     q = db.query(Cluster)
     if project_id:
         q = q.filter(Cluster.project_id == project_id)
     if gebiet_id:
         q = q.filter(Cluster.gebiet_id == gebiet_id)
+
+    # Sichtbarkeit einschränken: Admin sieht alle Cluster, andere Benutzer nur die,
+    # für die ihnen explizit eine Berechtigung (direkt, über Projekt oder Gebiet) erteilt wurde.
+    # Wurden einem Benutzer noch KEINE granularen Rechte vergeben, gelten die Rollen-Basisrechte
+    # (Rückwärtskompatibilität), er sieht dann ebenfalls alle Cluster.
+    erlaubte_ids = user_accessible_cluster_ids(db, user)
+    if erlaubte_ids is not None:
+        q = q.filter(Cluster.id.in_(erlaubte_ids))
+
     return [to_out(db, c, with_geometry) for c in q.order_by(Cluster.name).all()]
 
 
@@ -54,7 +62,7 @@ def create_cluster(
     payload: ClusterCreate, request: Request, db: Session = Depends(get_db),
     user: User = Depends(require_global_permission(Permission.cluster_erstellen)),
 ):
-    geom = from_shape(shape(payload.geometrie), srid=4326)
+    geom = geojson_to_multipolygon_ewkb(payload.geometrie)
     flaeche = db.scalar(func.ST_Area(func.ST_Transform(geom, 3857)))
 
     c = Cluster(

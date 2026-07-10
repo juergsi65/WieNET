@@ -40,7 +40,7 @@ export default function Sidebar({ onSelectSearchResult }: { onSelectSearchResult
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Adresse, Schacht, Muffe, Kabel…"
-            className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-conduit-500"
           />
         </form>
         {searching && <p className="text-xs text-ink-400 mt-2">Suche läuft…</p>}
@@ -50,7 +50,7 @@ export default function Sidebar({ onSelectSearchResult }: { onSelectSearchResult
               <li key={r.id}>
                 <button
                   onClick={() => onSelectSearchResult(r.typ, r.id, r.geometrie)}
-                  className="w-full text-left text-sm px-2 py-1.5 rounded-md hover:bg-brand-50 dark:hover:bg-slate-700 text-ink-600 dark:text-slate-200"
+                  className="w-full text-left text-sm px-2 py-1.5 rounded-md hover:bg-conduit-50 dark:hover:bg-slate-700 text-ink-600 dark:text-slate-200"
                 >
                   <span className="font-medium">{r.name}</span>
                   <span className="text-xs text-ink-400 ml-1">({r.typ})</span>
@@ -70,10 +70,10 @@ export default function Sidebar({ onSelectSearchResult }: { onSelectSearchResult
                 type="checkbox"
                 checked={activeLayers[l.key] ?? true}
                 onChange={() => toggleLayer(l.key)}
-                className="rounded accent-brand-600"
+                className="rounded accent-conduit-600"
               />
               <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: l.color }} />
-              <span className="text-sm text-slate-600 dark:text-slate-300">{l.label}</span>
+              <span className="text-sm text-ink-600 dark:text-slate-300">{l.label}</span>
             </li>
           ))}
         </ul>

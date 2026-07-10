@@ -1,7 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl, { Map as MLMap } from "maplibre-gl";
 import { mapApi, adminClusterApi } from "../lib/api";
 import { useAppStore } from "../store/useAppStore";
+import RedliningToolbar, { RedliningTool } from "./RedliningToolbar";
+import { TrasseFormModal } from "./TrasseCreateForm";
+import NetzelementFormModal from "./NetzelementFormModal";
 
 const STATUS_COLOR: Record<string, string> = {
   aktiv: "#16a34a",
@@ -17,14 +20,36 @@ const NETZELEMENT_COLOR: Record<string, string> = {
   technikstandort: "#7c3aed",
 };
 
+const TOOL_LABEL: Record<string, string> = {
+  schacht: "Schacht", kasten: "Kasten", muffe: "Muffe", verteiler: "Verteiler", fcp: "FCP",
+};
+
 interface Props {
   onSelect: (typ: string, id: string) => void;
+  canEdit: boolean;
 }
 
-export default function MapView({ onSelect }: Props) {
+export default function MapView({ onSelect, canEdit }: Props) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
   const activeLayers = useAppStore((s) => s.activeLayers);
+
+  const [tool, setTool] = useState<RedliningTool>("none");
+  const toolRef = useRef<RedliningTool>("none");
+  toolRef.current = tool;
+
+  const [drawPoints, setDrawPoints] = useState<[number, number][]>([]);
+  const drawPointsRef = useRef<[number, number][]>([]);
+  drawPointsRef.current = drawPoints;
+  const [drawLengthM, setDrawLengthM] = useState(0);
+
+  const [pendingTrasse, setPendingTrasse] = useState<any | null>(null);
+  const [pendingPoint, setPendingPoint] = useState<{ typ: string; geometrie: any } | null>(null);
+  const [clusters, setClusters] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    adminClusterApi.list({ with_geometry: false }).then((res) => setClusters(res.data)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
@@ -66,16 +91,11 @@ export default function MapView({ onSelect }: Props) {
         paint: { "text-color": "#334155", "text-halo-color": "#ffffff", "text-halo-width": 1.5 },
       });
 
-      adminClusterApi.list({ with_geometry: true }).then((res) => {
-        const features = res.data.map((c: any) => ({
-          type: "Feature", geometry: c.geometrie,
-          properties: { id: c.id, name: c.name, farbe: c.farbe, status: c.status },
-        }));
-        (map.getSource("clusters") as maplibregl.GeoJSONSource)?.setData({ type: "FeatureCollection", features });
-      }).catch(() => {});
+      loadClusterLayer(map);
 
       const clusterPopup = new maplibregl.Popup({ closeButton: true });
       map.on("click", "clusters-fill", (e) => {
+        if (toolRef.current !== "none") return; // beim Zeichnen keine Cluster-Popups
         const f = e.features?.[0];
         if (!f) return;
         clusterPopup
@@ -83,11 +103,12 @@ export default function MapView({ onSelect }: Props) {
           .setHTML(`<div style="font-size:13px"><strong>${f.properties!.name}</strong><br/>Status: ${f.properties!.status}<br/><a href="/admin/cluster/${f.properties!.id}" style="color:#0d80c2">Cluster-Dashboard öffnen →</a></div>`)
           .addTo(map);
       });
-      map.on("mouseenter", "clusters-fill", () => { map.getCanvas().style.cursor = "pointer"; });
+      map.on("mouseenter", "clusters-fill", () => { if (toolRef.current === "none") map.getCanvas().style.cursor = "pointer"; });
       map.on("mouseleave", "clusters-fill", () => { map.getCanvas().style.cursor = ""; });
 
       map.addSource("trassen", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       map.addSource("netzelemente", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+      map.addSource("redlining-draw", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
 
       // Trassen als Linien: gestrichelt=geplant, durchgezogen=aktiv, ausgegraut=stillgelegt
       map.addLayer({
@@ -108,6 +129,18 @@ export default function MapView({ onSelect }: Props) {
           "line-dasharray": ["case", ["==", ["get", "status"], "geplant"], ["literal", [2, 2]], ["literal", [1, 0]]],
           "line-opacity": ["case", ["==", ["get", "status"], "stillgelegt"], 0.4, 0.9],
         },
+      });
+
+      // Redlining: aktuell gezeichnete Trasse (Linie + Stützpunkte)
+      map.addLayer({
+        id: "redlining-line", type: "line", source: "redlining-draw",
+        filter: ["==", ["geometry-type"], "LineString"],
+        paint: { "line-color": "#E8590C", "line-width": 3, "line-dasharray": [1, 1] },
+      });
+      map.addLayer({
+        id: "redlining-points", type: "circle", source: "redlining-draw",
+        filter: ["==", ["geometry-type"], "Point"],
+        paint: { "circle-radius": 5, "circle-color": "#E8590C", "circle-stroke-width": 2, "circle-stroke-color": "#fff" },
       });
 
       // Netzelemente als Punkte, farbcodiert nach Typ, Radius nach Belegung
@@ -147,11 +180,13 @@ export default function MapView({ onSelect }: Props) {
       const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
 
       map.on("click", "trassen-linie", (e) => {
+        if (toolRef.current !== "none") return;
         const f = e.features?.[0];
         if (!f) return;
         onSelect("trasse", f.properties!.id);
       });
       map.on("click", "netzelemente-punkte", (e) => {
+        if (toolRef.current !== "none") return;
         const f = e.features?.[0];
         if (!f) return;
         onSelect(f.properties!.objekt_typ === "netzelement" ? f.properties!.typ : "netzelement", f.properties!.id);
@@ -159,6 +194,7 @@ export default function MapView({ onSelect }: Props) {
 
       ["trassen-linie", "netzelemente-punkte"].forEach((layer) => {
         map.on("mouseenter", layer, (e) => {
+          if (toolRef.current !== "none") return;
           map.getCanvas().style.cursor = "pointer";
           const f = e.features?.[0];
           if (!f) return;
@@ -174,6 +210,23 @@ export default function MapView({ onSelect }: Props) {
         });
       });
 
+      // Redlining: Klick auf die Karte, wenn ein Werkzeug aktiv ist
+      map.on("click", (e) => {
+        const currentTool = toolRef.current;
+        if (currentTool === "none") return;
+
+        const coords: [number, number] = [e.lngLat.lng, e.lngLat.lat];
+
+        if (currentTool === "trasse") {
+          const next = [...drawPointsRef.current, coords];
+          setDrawPoints(next);
+          updateDrawSource(map, next);
+        } else {
+          // Punktobjekt: sofort Formular öffnen
+          setPendingPoint({ typ: currentTool, geometrie: { type: "Point", coordinates: coords } });
+        }
+      });
+
       loadData(map);
     });
 
@@ -185,6 +238,86 @@ export default function MapView({ onSelect }: Props) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function updateDrawSource(map: MLMap, points: [number, number][]) {
+    const features: any[] = points.map((p) => ({ type: "Feature", geometry: { type: "Point", coordinates: p }, properties: {} }));
+    if (points.length >= 2) {
+      features.push({ type: "Feature", geometry: { type: "LineString", coordinates: points }, properties: {} });
+    }
+    (map.getSource("redlining-draw") as maplibregl.GeoJSONSource)?.setData({ type: "FeatureCollection", features });
+
+    // Länge grob berechnen (haversine)
+    let length = 0;
+    for (let i = 1; i < points.length; i++) {
+      length += haversineMeters(points[i - 1], points[i]);
+    }
+    setDrawLengthM(length);
+  }
+
+  function haversineMeters(a: [number, number], b: [number, number]) {
+    const R = 6371000;
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const dLat = toRad(b[1] - a[1]);
+    const dLon = toRad(b[0] - a[0]);
+    const lat1 = toRad(a[1]);
+    const lat2 = toRad(b[1]);
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.asin(Math.sqrt(h));
+  }
+
+  function handleSelectTool(next: RedliningTool) {
+    setTool(next);
+    setDrawPoints([]);
+    setDrawLengthM(0);
+    const map = mapRef.current;
+    if (map) updateDrawSource(map, []);
+  }
+
+  function handleUndoPoint() {
+    const next = drawPoints.slice(0, -1);
+    setDrawPoints(next);
+    if (mapRef.current) updateDrawSource(mapRef.current, next);
+  }
+
+  function handleCancelTool() {
+    setTool("none");
+    setDrawPoints([]);
+    setDrawLengthM(0);
+    setPendingPoint(null);
+    setPendingTrasse(null);
+    if (mapRef.current) updateDrawSource(mapRef.current, []);
+  }
+
+  function handleFinishLine() {
+    if (drawPoints.length < 2) return;
+    setPendingTrasse({ type: "LineString", coordinates: drawPoints });
+  }
+
+  function handleObjectCreated() {
+    setPendingTrasse(null);
+    setPendingPoint(null);
+    setTool("none");
+    setDrawPoints([]);
+    setDrawLengthM(0);
+    const map = mapRef.current;
+    if (map) {
+      updateDrawSource(map, []);
+      loadData(map);
+    }
+  }
+
+  async function loadClusterLayer(map: MLMap) {
+    try {
+      const res = await adminClusterApi.list({ with_geometry: true });
+      const features = res.data.map((c: any) => ({
+        type: "Feature", geometry: c.geometrie,
+        properties: { id: c.id, name: c.name, farbe: c.farbe, status: c.status },
+      }));
+      (map.getSource("clusters") as maplibregl.GeoJSONSource)?.setData({ type: "FeatureCollection", features });
+    } catch {
+      // Sichtbarkeit ist berechtigungsabhängig gefiltert - ein leeres Ergebnis ist normal, kein Fehler
+    }
+  }
 
   async function loadData(map: MLMap) {
     const zoom = Math.round(map.getZoom());
@@ -220,5 +353,41 @@ export default function MapView({ onSelect }: Props) {
     map.setLayoutProperty("clusters-label", "visibility", vis);
   }, [activeLayers.cluster]);
 
-  return <div ref={mapContainer} className="w-full h-full" />;
+  return (
+    <div className="relative w-full h-full">
+      <div ref={mapContainer} className="w-full h-full" />
+
+      <RedliningToolbar
+        activeTool={tool}
+        onSelectTool={handleSelectTool}
+        drawingPointCount={drawPoints.length}
+        drawingLengthM={drawLengthM}
+        onFinishLine={handleFinishLine}
+        onUndoPoint={handleUndoPoint}
+        onCancel={handleCancelTool}
+        canEdit={canEdit}
+      />
+
+      {pendingTrasse && (
+        <TrasseFormModal
+          geometrie={pendingTrasse}
+          laengeM={drawLengthM}
+          clusters={clusters}
+          onCreated={handleObjectCreated}
+          onCancel={() => setPendingTrasse(null)}
+        />
+      )}
+
+      {pendingPoint && (
+        <NetzelementFormModal
+          typ={pendingPoint.typ}
+          typLabel={TOOL_LABEL[pendingPoint.typ] ?? pendingPoint.typ}
+          geometrie={pendingPoint.geometrie}
+          clusters={clusters}
+          onCreated={handleObjectCreated}
+          onCancel={() => setPendingPoint(null)}
+        />
+      )}
+    </div>
+  );
 }

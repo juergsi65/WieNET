@@ -7,7 +7,9 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_user
+from app.core.permissions import user_accessible_cluster_ids
 from app.models.infrastructure import Trasse, Netzelement, NetzelementTyp, ObjektStatus
+from app.models.user import User
 
 router = APIRouter(prefix="/api/map", tags=["map"])
 
@@ -36,7 +38,7 @@ def get_trassen_geojson(
     status_filter: Optional[str] = None,
     bbox: Optional[str] = None,  # "minLon,minLat,maxLon,maxLat"
     db: Session = Depends(get_db),
-    _user=Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     q = db.query(Trasse)
     if status_filter:
@@ -47,6 +49,12 @@ def get_trassen_geojson(
             Trasse.geometrie,
             func.ST_MakeEnvelope(min_lon, min_lat, max_lon, max_lat, 4326)
         ))
+
+    # Sichtbarkeit: Admin sieht alles. Benutzer mit granularen Clusterrechten sehen
+    # nur Trassen ihrer freigegebenen Cluster (nicht zugeordnete Trassen ausgeblendet).
+    erlaubte_cluster = user_accessible_cluster_ids(db, user)
+    if erlaubte_cluster is not None:
+        q = q.filter(Trasse.cluster_id.in_(erlaubte_cluster))
 
     features = []
     for t in q.all():
@@ -69,7 +77,7 @@ def get_netzelemente_geojson(
     typ_filter: Optional[str] = None,
     bbox: Optional[str] = None,
     db: Session = Depends(get_db),
-    _user=Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     group = ZOOM_GROUPS[zoom_to_group(zoom)]
     q = db.query(Netzelement).filter(Netzelement.typ.in_(group))
@@ -81,6 +89,10 @@ def get_netzelemente_geojson(
             Netzelement.geometrie,
             func.ST_MakeEnvelope(min_lon, min_lat, max_lon, max_lat, 4326)
         ))
+
+    erlaubte_cluster = user_accessible_cluster_ids(db, user)
+    if erlaubte_cluster is not None:
+        q = q.filter(Netzelement.cluster_id.in_(erlaubte_cluster))
 
     features = []
     for n in q.all():

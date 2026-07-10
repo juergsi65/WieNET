@@ -6,6 +6,7 @@ interface Props {
   typ: string;
   id: string;
   onClose: () => void;
+  canEdit?: boolean;
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -15,7 +16,7 @@ const STATUS_BADGE: Record<string, string> = {
   gestoert: "bg-conduit-100 text-conduit-700",
 };
 
-export default function DetailPanel({ typ, id, onClose }: Props) {
+export default function DetailPanel({ typ, id, onClose, canEdit = false }: Props) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showRohrbelegung, setShowRohrbelegung] = useState(false);
@@ -79,7 +80,7 @@ export default function DetailPanel({ typ, id, onClose }: Props) {
               </button>
               {showRohrbelegung && (
                 <div className="mt-3">
-                  <RohrQuerschnitt trasseId={id} />
+                  <RohrQuerschnitt trasseId={id} canEdit={canEdit} />
                 </div>
               )}
             </div>

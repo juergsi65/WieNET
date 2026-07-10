@@ -114,3 +114,12 @@ export const adminAuditApi = {
 export const adminSystemApi = {
   status: () => api.get("/admin/system/status"),
 };
+
+// --- Redlining: Trassen, Netzelemente, Kabel direkt anlegen ---
+
+export const editApi = {
+  referenzdaten: () => api.get("/edit/referenzdaten"),
+  createTrasse: (payload: any) => api.post("/edit/trasse", payload),
+  createNetzelement: (payload: any) => api.post("/edit/netzelement", payload),
+  createKabel: (payload: any) => api.post("/edit/kabel", payload),
+};

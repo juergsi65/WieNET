@@ -82,10 +82,19 @@ Kennzahlen; rollenbasierte Anmeldung (JWT); Dark/Light Mode.
 Gebiet → Cluster → Projekt → Bauabschnitt; Cluster-Polygone direkt auf der Karte
 zeichnen mit automatischer Erkennung aller enthaltenen/schneidenden Objekte (Vorschau
 vor dem Bestätigen); Cluster- und Projekt-Dashboards; granulares, serverseitig
-geprüftes Berechtigungssystem (Basisrollen plus optionale Gebiets-/Cluster-/
-Projektrechte); erweiterte Benutzerverwaltung (Deaktivieren/Reaktivieren, Passwort-
-Reset, Kontosperrung nach 5 Fehlversuchen); Audit-Log mit Filtern und Pagination;
-Systemstatus-Seite.
+geprüftes Berechtigungssystem - **Administratoren sehen alle Cluster und Objekte,
+andere Benutzer nur die ihnen explizit zugewiesenen** (gilt sowohl für die
+Kartenansicht als auch für die Cluster-Verwaltung); erweiterte Benutzerverwaltung
+(Deaktivieren/Reaktivieren, Passwort-Reset, Kontosperrung nach 5 Fehlversuchen);
+Audit-Log mit Filtern und Pagination; Systemstatus-Seite.
+
+**Redlining (Objekterfassung auf der Karte):** Für Benutzer mit Erstellrecht
+(Administrator, Projektleiter, Planer) steht auf der Kartenansicht eine
+Werkzeugleiste zur Verfügung: Trassen als Linie zeichnen (inkl. optionalem
+Rohrverband mit frei wählbarer Rohranzahl, -typ und -durchmesser, branchenüblicher
+Rohrfarbcodierung), sowie Schächte, Kästen, Muffen, Verteiler und FCPs als
+Punktobjekte setzen. In der Rohrbelegungsansicht kann in ein freies Rohr direkt
+ein Kabel eingezogen werden.
 
 ### Bewusst nicht enthalten (nächste Ausbaustufe)
 

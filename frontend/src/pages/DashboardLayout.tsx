@@ -84,10 +84,10 @@ export default function DashboardLayout() {
                 <>
                   <Sidebar onSelectSearchResult={(typ, id) => handleSelect(typ, id)} />
                   <main className="flex-1 relative">
-                    <MapView onSelect={handleSelect} />
+                    <MapView onSelect={handleSelect} canEdit={["admin", "projektleiter", "planer"].includes(role ?? "")} />
                   </main>
                   {selected && (
-                    <DetailPanel typ={selected.typ} id={selected.id} onClose={() => setSelected(null)} />
+                    <DetailPanel typ={selected.typ} id={selected.id} onClose={() => setSelected(null)} canEdit={["admin", "projektleiter", "planer"].includes(role ?? "")} />
                   )}
                 </>
               }
@@ -100,7 +100,7 @@ export default function DashboardLayout() {
                     <Netzschema onSelectNode={(id, typ) => handleSelect(typ, id)} />
                   </main>
                   {selected && (
-                    <DetailPanel typ={selected.typ} id={selected.id} onClose={() => setSelected(null)} />
+                    <DetailPanel typ={selected.typ} id={selected.id} onClose={() => setSelected(null)} canEdit={["admin", "projektleiter", "planer"].includes(role ?? "")} />
                   )}
                 </>
               }

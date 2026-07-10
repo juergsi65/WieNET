@@ -40,10 +40,14 @@ def get_objekt_detail(objekt_typ: str, objekt_id: uuid.UUID, db: Session = Depen
         if not obj:
             raise HTTPException(status_code=404, detail="Nicht gefunden")
         geom = json.loads(db.scalar(func.ST_AsGeoJSON(obj.geometrie)))
+        ersteller_name = obj.erstellt_von.full_name if obj.erstellt_von else None
         return {
             "id": str(obj.id), "typ": "trasse", "name": obj.name, "status": obj.status.value,
             "verlegetiefe_cm": obj.verlegetiefe_cm, "oberflaeche": obj.oberflaeche,
             "laenge_m": obj.laenge_m, "notizen": obj.notizen, "geometrie": geom,
+            "ist_planung": obj.status.value == "geplant",
+            "erstellt_von": ersteller_name,
+            "planungskennzeichen": f"Planung_{ersteller_name}" if (obj.status.value == "geplant" and ersteller_name) else None,
             "rohrverbaende": [{"id": str(r.id), "bezeichnung": r.bezeichnung, "anzahl_rohre": len(r.rohre)}
                                for r in obj.rohrverbaende],
         }
@@ -52,6 +56,7 @@ def get_objekt_detail(objekt_typ: str, objekt_id: uuid.UUID, db: Session = Depen
         if not obj:
             raise HTTPException(status_code=404, detail="Nicht gefunden")
         geom = json.loads(db.scalar(func.ST_AsGeoJSON(obj.geometrie)))
+        ersteller_name = obj.erstellt_von.full_name if obj.erstellt_von else None
         return {
             "id": str(obj.id), "typ": obj.typ.value, "name": obj.name, "status": obj.status.value,
             "adresse": obj.adresse, "gemeinde": obj.gemeinde, "baujahr": obj.baujahr,
@@ -59,6 +64,9 @@ def get_objekt_detail(objekt_typ: str, objekt_id: uuid.UUID, db: Session = Depen
             "modell": obj.modell, "notizen": obj.notizen, "geometrie": geom,
             "ports_gesamt": obj.ports_gesamt, "ports_belegt": obj.ports_belegt,
             "parent_id": str(obj.parent_id) if obj.parent_id else None,
+            "ist_planung": obj.status.value == "geplant",
+            "erstellt_von": ersteller_name,
+            "planungskennzeichen": f"Planung_{ersteller_name}" if (obj.status.value == "geplant" and ersteller_name) else None,
         }
 
 

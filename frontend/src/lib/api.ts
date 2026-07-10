@@ -27,10 +27,10 @@ export interface GeoJSONFeatureCollection {
 }
 
 export const mapApi = {
-  trassen: (zoom: number, bbox?: string) =>
-    api.get<GeoJSONFeatureCollection>("/map/trassen", { params: { zoom, bbox } }),
-  netzelemente: (zoom: number, bbox?: string) =>
-    api.get<GeoJSONFeatureCollection>("/map/netzelemente", { params: { zoom, bbox } }),
+  trassen: (zoom: number, bbox?: string, statusFilter?: string) =>
+    api.get<GeoJSONFeatureCollection>("/map/trassen", { params: { zoom, bbox, status_filter: statusFilter } }),
+  netzelemente: (zoom: number, bbox?: string, statusFilter?: string) =>
+    api.get<GeoJSONFeatureCollection>("/map/netzelemente", { params: { zoom, bbox, status_filter: statusFilter } }),
 };
 
 export const objektApi = {

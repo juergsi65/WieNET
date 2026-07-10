@@ -6,9 +6,12 @@ import RedliningToolbar, { RedliningTool } from "./RedliningToolbar";
 import { TrasseFormModal } from "./TrasseCreateForm";
 import NetzelementFormModal from "./NetzelementFormModal";
 
+// Live-/Echtdaten vs. Planungsdaten müssen eindeutig unterscheidbar sein:
+// aktiv (Live) = kräftiges Grün, durchgezogen. geplant (Planung) = Signalorange, gestrichelt,
+// mit Beschriftung "Planung von <Benutzer>". stillgelegt = neutral/grau. gestoert = Rot.
 const STATUS_COLOR: Record<string, string> = {
   aktiv: "#16a34a",
-  geplant: "#64748b",
+  geplant: "#E8590C",
   stillgelegt: "#94a3b8",
   gestoert: "#dc2626",
 };
@@ -33,6 +36,9 @@ export default function MapView({ onSelect, canEdit }: Props) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
   const activeLayers = useAppStore((s) => s.activeLayers);
+  const datenFilter = useAppStore((s) => s.datenFilter);
+  const datenFilterRef = useRef(datenFilter);
+  datenFilterRef.current = datenFilter;
 
   const [tool, setTool] = useState<RedliningTool>("none");
   const toolRef = useRef<RedliningTool>("none");
@@ -125,9 +131,9 @@ export default function MapView({ onSelect, canEdit }: Props) {
             "gestoert", STATUS_COLOR.gestoert,
             "#3b82f6",
           ],
-          "line-width": 4,
-          "line-dasharray": ["case", ["==", ["get", "status"], "geplant"], ["literal", [2, 2]], ["literal", [1, 0]]],
-          "line-opacity": ["case", ["==", ["get", "status"], "stillgelegt"], 0.4, 0.9],
+          "line-width": ["case", ["==", ["get", "status"], "geplant"], 5, 4],
+          "line-dasharray": ["case", ["==", ["get", "status"], "geplant"], ["literal", [2.5, 1.5]], ["literal", [1, 0]]],
+          "line-opacity": ["case", ["==", ["get", "status"], "stillgelegt"], 0.4, 1],
         },
       });
 
@@ -199,7 +205,12 @@ export default function MapView({ onSelect, canEdit }: Props) {
           const f = e.features?.[0];
           if (!f) return;
           const props = f.properties!;
-          const html = `<div style="font-size:13px"><strong>${props.name}</strong><br/>Status: ${props.status}${
+          const statusZeile = props.ist_planung
+            ? `<span style="color:#E8590C;font-weight:600">● Planung${props.erstellt_von ? ` von ${props.erstellt_von}` : ""}</span>`
+            : props.status === "aktiv"
+              ? `<span style="color:#16a34a;font-weight:600">● Live</span>`
+              : `Status: ${props.status}`;
+          const html = `<div style="font-size:13px"><strong>${props.name}</strong><br/>${statusZeile}${
             props.belegung_pct != null ? `<br/>Belegung: ${props.belegung_pct}%` : ""
           }</div>`;
           popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
@@ -294,15 +305,34 @@ export default function MapView({ onSelect, canEdit }: Props) {
   }
 
   function handleObjectCreated() {
+    const map = mapRef.current;
+    const flyToCoords = pendingPoint?.geometrie?.coordinates as [number, number] | undefined;
+    const flyToLine = pendingTrasse?.coordinates as [number, number][] | undefined;
+
     setPendingTrasse(null);
     setPendingPoint(null);
     setTool("none");
     setDrawPoints([]);
     setDrawLengthM(0);
-    const map = mapRef.current;
+
     if (map) {
       updateDrawSource(map, []);
       loadData(map);
+
+      // Garantiert zur neu angelegten Geometrie springen, damit sie sofort sichtbar ist
+      if (flyToCoords) {
+        map.flyTo({ center: flyToCoords, zoom: Math.max(map.getZoom(), 17), speed: 1.2 });
+      } else if (flyToLine && flyToLine.length > 0) {
+        const lons = flyToLine.map((p) => p[0]);
+        const lats = flyToLine.map((p) => p[1]);
+        const bounds = new maplibregl.LngLatBounds(
+          [Math.min(...lons), Math.min(...lats)],
+          [Math.max(...lons), Math.max(...lats)]
+        );
+        map.fitBounds(bounds, { padding: 80, maxZoom: 18, duration: 800 });
+      }
+      // Nach dem Sprung erneut laden, da sich Zoom/Bounds geändert haben
+      setTimeout(() => loadData(map), 900);
     }
   }
 
@@ -323,10 +353,12 @@ export default function MapView({ onSelect, canEdit }: Props) {
     const zoom = Math.round(map.getZoom());
     const b = map.getBounds();
     const bbox = `${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
+    const filter = datenFilterRef.current;
+    const statusFilter = filter === "live" ? "aktiv" : filter === "planung" ? "geplant" : undefined;
     try {
       const [trassenRes, netzRes] = await Promise.all([
-        mapApi.trassen(zoom, bbox),
-        mapApi.netzelemente(zoom, bbox),
+        mapApi.trassen(zoom, bbox, statusFilter),
+        mapApi.netzelemente(zoom, bbox, statusFilter),
       ]);
       const trassenSrc = map.getSource("trassen") as maplibregl.GeoJSONSource;
       const netzSrc = map.getSource("netzelemente") as maplibregl.GeoJSONSource;
@@ -346,12 +378,25 @@ export default function MapView({ onSelect, canEdit }: Props) {
 
   useEffect(() => {
     const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    loadData(map);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [datenFilter]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     if (!map || !map.getLayer("clusters-fill")) return;
     const vis = activeLayers.cluster ? "visible" : "none";
     map.setLayoutProperty("clusters-fill", "visibility", vis);
     map.setLayoutProperty("clusters-outline", "visibility", vis);
     map.setLayoutProperty("clusters-label", "visibility", vis);
   }, [activeLayers.cluster]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.getCanvas().style.cursor = tool !== "none" ? "crosshair" : "";
+  }, [tool]);
 
   return (
     <div className="relative w-full h-full">

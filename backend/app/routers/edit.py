@@ -78,7 +78,7 @@ def create_trasse(
         laenge_m=round(laenge_m, 1) if laenge_m else None,
         geometrie=from_shape(geom, srid=4326),
         cluster_id=payload.cluster_id, bauabschnitt_id=payload.bauabschnitt_id,
-        notizen=payload.notizen,
+        notizen=payload.notizen, erstellt_von_id=user.id,
     )
     db.add(trasse)
     db.flush()
@@ -146,7 +146,7 @@ def create_netzelement(
         geometrie=from_shape(geom, srid=4326), adresse=payload.adresse, gemeinde=payload.gemeinde,
         parent_id=payload.parent_id, cluster_id=payload.cluster_id, ports_gesamt=payload.ports_gesamt,
         ports_belegt=0, betreiber=payload.betreiber, hersteller=payload.hersteller,
-        modell=payload.modell, notizen=payload.notizen,
+        modell=payload.modell, notizen=payload.notizen, erstellt_von_id=user.id,
     )
     db.add(el)
     db.commit()
@@ -196,6 +196,7 @@ def create_kabel(
         belegte_fasern=0, laenge_m=trasse.laenge_m if trasse else None, hersteller=payload.hersteller,
         status=ObjektStatus.geplant, geometrie=trasse.geometrie if trasse else None,
         kabelanfang_id=payload.kabelanfang_id, kabelende_id=payload.kabelende_id,
+        erstellt_von_id=user.id,
     )
     db.add(kabel)
     db.flush()

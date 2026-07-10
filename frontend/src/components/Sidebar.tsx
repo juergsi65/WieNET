@@ -18,6 +18,8 @@ export default function Sidebar({ onSelectSearchResult }: { onSelectSearchResult
   const [searching, setSearching] = useState(false);
   const activeLayers = useAppStore((s) => s.activeLayers);
   const toggleLayer = useAppStore((s) => s.toggleLayer);
+  const datenFilter = useAppStore((s) => s.datenFilter);
+  const setDatenFilter = useAppStore((s) => s.setDatenFilter);
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -33,6 +35,29 @@ export default function Sidebar({ onSelectSearchResult }: { onSelectSearchResult
 
   return (
     <aside className="w-72 shrink-0 h-full bg-white dark:bg-slate-800 border-r border-ink-100 dark:border-slate-700 overflow-y-auto">
+      <div className="p-4 border-b border-ink-100 dark:border-slate-700">
+        <p className="text-xs font-medium text-ink-400 uppercase tracking-wide mb-2">Datenstand</p>
+        <div className="grid grid-cols-3 gap-1 text-xs">
+          {([
+            { key: "alle", label: "Alle" },
+            { key: "live", label: "Live" },
+            { key: "planung", label: "Planung" },
+          ] as const).map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setDatenFilter(f.key)}
+              className={`py-1.5 rounded-md font-medium transition ${
+                datenFilter === f.key
+                  ? f.key === "planung" ? "bg-conduit-500 text-white" : f.key === "live" ? "bg-signal-600 text-white" : "bg-ink-900 text-white"
+                  : "bg-paper-dim dark:bg-slate-700 text-ink-500 hover:bg-ink-100"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="p-4 border-b border-ink-100 dark:border-slate-700">
         <form onSubmit={handleSearch}>
           <label className="text-xs font-medium text-ink-400 uppercase tracking-wide">Suche</label>
@@ -82,10 +107,10 @@ export default function Sidebar({ onSelectSearchResult }: { onSelectSearchResult
       <div className="p-4 border-t border-ink-100 dark:border-slate-700">
         <p className="text-xs font-medium text-ink-400 uppercase tracking-wide mb-2">Legende</p>
         <ul className="text-xs space-y-1.5 text-ink-400 dark:text-slate-400">
-          <li className="flex items-center gap-2"><span className="w-4 h-0.5 bg-green-600 inline-block" /> Aktiv (durchgezogen)</li>
-          <li className="flex items-center gap-2"><span className="w-4 h-0.5 border-t-2 border-dashed border-slate-500 inline-block" /> Geplant (gestrichelt)</li>
+          <li className="flex items-center gap-2"><span className="w-4 h-0.5 bg-signal-600 inline-block" /> Live-Daten / aktiv (durchgezogen, grün)</li>
+          <li className="flex items-center gap-2"><span className="w-4 h-0.5 border-t-2 border-dashed border-conduit-500 inline-block" /> Planung (gestrichelt, orange)</li>
           <li className="flex items-center gap-2"><span className="w-4 h-0.5 bg-slate-300 inline-block" /> Stillgelegt (ausgegraut)</li>
-          <li className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-red-600 inline-block" /> Störung</li>
+          <li className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-conduit-600 inline-block" /> Störung</li>
         </ul>
       </div>
     </aside>

@@ -59,6 +59,7 @@ def get_trassen_geojson(
     features = []
     for t in q.all():
         geom = json.loads(db.scalar(func.ST_AsGeoJSON(t.geometrie)))
+        ersteller_name = t.erstellt_von.full_name if t.erstellt_von else None
         features.append({
             "type": "Feature",
             "geometry": geom,
@@ -66,6 +67,9 @@ def get_trassen_geojson(
                 "id": str(t.id), "name": t.name, "typ": t.typ, "status": t.status.value,
                 "laenge_m": t.laenge_m, "verlegetiefe_cm": t.verlegetiefe_cm,
                 "objekt_typ": "trasse", "cluster_id": str(t.cluster_id) if t.cluster_id else None,
+                "ist_planung": t.status.value == "geplant",
+                "erstellt_von": ersteller_name,
+                "planungskennzeichen": f"Planung_{ersteller_name}" if (t.status.value == "geplant" and ersteller_name) else None,
             },
         })
     return {"type": "FeatureCollection", "features": features}
@@ -75,6 +79,7 @@ def get_trassen_geojson(
 def get_netzelemente_geojson(
     zoom: int = Query(16, ge=1, le=22),
     typ_filter: Optional[str] = None,
+    status_filter: Optional[str] = None,
     bbox: Optional[str] = None,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
@@ -83,6 +88,8 @@ def get_netzelemente_geojson(
     q = db.query(Netzelement).filter(Netzelement.typ.in_(group))
     if typ_filter:
         q = q.filter(Netzelement.typ == typ_filter)
+    if status_filter:
+        q = q.filter(Netzelement.status == status_filter)
     if bbox:
         min_lon, min_lat, max_lon, max_lat = map(float, bbox.split(","))
         q = q.filter(func.ST_Intersects(
@@ -100,6 +107,7 @@ def get_netzelemente_geojson(
         belegung_pct = None
         if n.ports_gesamt:
             belegung_pct = round(100 * (n.ports_belegt or 0) / n.ports_gesamt, 1)
+        ersteller_name = n.erstellt_von.full_name if n.erstellt_von else None
         features.append({
             "type": "Feature",
             "geometry": geom,
@@ -107,6 +115,9 @@ def get_netzelemente_geojson(
                 "id": str(n.id), "name": n.name, "typ": n.typ.value, "status": n.status.value,
                 "ports_gesamt": n.ports_gesamt, "ports_belegt": n.ports_belegt,
                 "belegung_pct": belegung_pct, "objekt_typ": "netzelement",
+                "ist_planung": n.status.value == "geplant",
+                "erstellt_von": ersteller_name,
+                "planungskennzeichen": f"Planung_{ersteller_name}" if (n.status.value == "geplant" and ersteller_name) else None,
             },
         })
     return {"type": "FeatureCollection", "features": features}

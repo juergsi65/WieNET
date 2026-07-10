@@ -11,7 +11,7 @@ interface Props {
 
 const STATUS_BADGE: Record<string, string> = {
   aktiv: "bg-signal-100 text-signal-700",
-  geplant: "bg-slate-100 text-slate-600",
+  geplant: "bg-conduit-100 text-conduit-700",
   stillgelegt: "bg-slate-200 text-slate-500",
   gestoert: "bg-conduit-100 text-conduit-700",
 };
@@ -40,11 +40,20 @@ export default function DetailPanel({ typ, id, onClose, canEdit = false }: Props
         <div className="p-4 space-y-4">
           <div>
             <h4 className="text-lg font-semibold text-ink-900 dark:text-slate-100">{data.name}</h4>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs uppercase tracking-wide text-slate-400">{data.typ}</span>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <span className="text-xs uppercase tracking-wide text-ink-400">{data.typ}</span>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_BADGE[data.status] ?? "bg-slate-100"}`}>
                 {data.status}
               </span>
+              {data.ist_planung ? (
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-conduit-500 text-white">
+                  ● Planung{data.erstellt_von ? ` von ${data.erstellt_von}` : ""}
+                </span>
+              ) : data.status === "aktiv" ? (
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-signal-600 text-white">
+                  ● Live-Daten
+                </span>
+              ) : null}
             </div>
           </div>
 

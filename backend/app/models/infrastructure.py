@@ -46,12 +46,14 @@ class Trasse(Base):
     geometrie = Column(Geometry(geometry_type="LINESTRING", srid=4326), nullable=False)
     bauabschnitt_id = Column(UUID(as_uuid=True), ForeignKey("bauabschnitte.id"), nullable=True)
     cluster_id = Column(UUID(as_uuid=True), ForeignKey("clusters.id"), nullable=True)  # Hauptcluster
+    erstellt_von_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     notizen = Column(Text, nullable=True)
     erstellt_am = Column(DateTime(timezone=True), server_default=func.now())
     aktualisiert_am = Column(DateTime(timezone=True), onupdate=func.now())
 
     bauabschnitt = relationship("Bauabschnitt", back_populates="trassen")
     rohrverbaende = relationship("Rohrverband", back_populates="trasse", cascade="all, delete-orphan")
+    erstellt_von = relationship("User", foreign_keys=[erstellt_von_id])
 
 
 class Rohrverband(Base):
@@ -106,6 +108,7 @@ class Kabel(Base):
     geometrie = Column(Geometry(geometry_type="LINESTRING", srid=4326), nullable=True)
     kabelanfang_id = Column(UUID(as_uuid=True), ForeignKey("netzelemente.id"), nullable=True)
     kabelende_id = Column(UUID(as_uuid=True), ForeignKey("netzelemente.id"), nullable=True)
+    erstellt_von_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
 
     belegungen = relationship("RohrKabelBelegung", back_populates="kabel")
 
@@ -151,6 +154,7 @@ class Netzelement(Base):
     gemeinde = Column(String, nullable=True)
     parent_id = Column(UUID(as_uuid=True), ForeignKey("netzelemente.id"), nullable=True)
     cluster_id = Column(UUID(as_uuid=True), ForeignKey("clusters.id"), nullable=True)  # Hauptcluster
+    erstellt_von_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     ports_gesamt = Column(Integer, nullable=True)
     ports_belegt = Column(Integer, default=0)
     baujahr = Column(Integer, nullable=True)
@@ -162,6 +166,7 @@ class Netzelement(Base):
     erstellt_am = Column(DateTime(timezone=True), server_default=func.now())
 
     children = relationship("Netzelement", backref="parent", remote_side=[id])
+    erstellt_von = relationship("User", foreign_keys=[erstellt_von_id])
 
 
 class Stoerung(Base):

@@ -96,9 +96,29 @@ Rohrfarbcodierung), sowie Schächte, Kästen, Muffen, Verteiler und FCPs als
 Punktobjekte setzen. In der Rohrbelegungsansicht kann in ein freies Rohr direkt
 ein Kabel eingezogen werden.
 
+**Materialkatalog** (Adminbereich → Materialkatalog): Hersteller, Produktkategorien,
+Produktfamilien, Produkte, Farben sowie Rohrverband- und Kabelvorlagen als
+versionierbare Stammdaten - Grundlage für die Materialauswahl im Redlining (folgt in
+einer nächsten Ausbaustufe). Enthält bereits die zwei in der Branche etablierten,
+öffentlich dokumentierten Farbstandards **DIN EN 60794-1-1** (Rohr-/Aderfarben) und
+**TIA-598-C** (Faserfarben) mit je 12 Grund- und 12 Streifenkombinationsfarben, ein
+Hersteller-Gerüst für gabocom (gabo Systemtechnik GmbH), Hexatronic und Prysmian
+Group sowie drei generische, produktneutrale Rohrverbandvorlagen (4-/7-/12-fach nach
+DIN-Farbfolge). **Bewusst keine erfundenen Artikelnummern oder Produktvarianten** -
+Hersteller/Produktfamilien/Produkte ohne verifizierte Quelle sind im Adminbereich
+sichtbar mit „zu ergänzen" markiert und müssen von einem Administrator anhand
+tatsächlicher Datenblätter vervollständigt werden. Lesen ist allen Rollen erlaubt,
+Anlegen/Ändern/Löschen ist auf die Rolle Administrator beschränkt
+(serverseitig geprüft über die Berechtigung `systemeinstellungen_aendern`).
+
 ### Bewusst nicht enthalten (nächste Ausbaustufe)
 
-KML-/Shapefile-Import für Gebietsgrenzen, Polygon-Bearbeitungswerkzeuge (Teilen/
+Materialauswahl direkt im Redlining-Formular (aktuell nur über den Adminbereich
+pflegbar, Verknüpfung mit Trasse/Rohr/Kabel folgt), professionelle Gebiets-/
+Cluster-Erweiterung (Teilen/Zusammenführen, automatische Clusterung mit Vorschau),
+transaktionssicheres konfigurierbares Nummernsystem, vollständige Löschfunktionen
+für alle Objekttypen (aktuell: Cluster/Gebiete/Produkte mit Abhängigkeitsschutz,
+weitere folgen), KML-/Shapefile-Import für Gebietsgrenzen, Polygon-Bearbeitungswerkzeuge (Teilen/
 Zusammenführen), vollständiges Exportcenter (PDF-/Excel-Berichte mit mehreren
 Tabellenblättern), Daten-Explorer mit speicherbaren Ansichten, Datenqualitätsprüfung,
 Hintergrundjobs mit Fortschrittsanzeige, Zwei-Faktor-Authentifizierung, automatisierte
@@ -200,9 +220,13 @@ ausgeliefert und nicht mehr von externen CDNs nachgeladen.
 
 ## Datenmodell
 
-Siehe `backend/app/models/infrastructure.py` (Tiefbau-/Netzobjekte) und
-`backend/app/models/admin.py` (Gebiete, Cluster, Projekte, Berechtigungen, Audit-Log).
-Kernbeziehungen: `Trasse → Rohrverband → Rohr ↔ Kabel`, Netzhierarchie über
-`Netzelement.parent_id` (OLT → PON → Splitter → FCP → Muffe → Hausanschluss),
-Cluster-Zuordnung über `cluster_id` (Hauptcluster) bzw. `object_cluster_assignments`
-(zusätzliche/schneidende Zuordnungen, ohne Geodaten zu duplizieren).
+Siehe `backend/app/models/infrastructure.py` (Tiefbau-/Netzobjekte),
+`backend/app/models/admin.py` (Gebiete, Cluster, Projekte, Berechtigungen, Audit-Log)
+und `backend/app/models/materials.py` (Materialkatalog: Hersteller, Produktkategorien,
+Produktfamilien, Produkte, Farben, Rohrverband-/Kabelvorlagen). Kernbeziehungen:
+`Trasse → Rohrverband → Rohr ↔ Kabel`, Netzhierarchie über `Netzelement.parent_id`
+(OLT → PON → Splitter → FCP → Muffe → Hausanschluss), Cluster-Zuordnung über
+`cluster_id` (Hauptcluster) bzw. `object_cluster_assignments` (zusätzliche/
+schneidende Zuordnungen, ohne Geodaten zu duplizieren). Der Materialkatalog ist noch
+nicht mit `Rohr`/`Kabel` verknüpft (`Rohrverbandvorlage.produkt_id`/
+`Kabelvorlage.produkt_id` sind eigenständig) - das folgt mit der Redlining-Integration.

@@ -115,6 +115,48 @@ export const adminSystemApi = {
   status: () => api.get("/admin/system/status"),
 };
 
+// --- Admin: Materialkatalog (Hersteller, Produkte, Farben, Rohrverband-/Kabelvorlagen) ---
+
+export const materialApi = {
+  hersteller: {
+    list: (nurAktive = false) => api.get("/admin/materialkatalog/hersteller", { params: { nur_aktive: nurAktive } }),
+    create: (payload: any) => api.post("/admin/materialkatalog/hersteller", payload),
+    update: (id: string, payload: any) => api.patch(`/admin/materialkatalog/hersteller/${id}`, payload),
+    remove: (id: string) => api.delete(`/admin/materialkatalog/hersteller/${id}`),
+  },
+  kategorien: {
+    list: () => api.get("/admin/materialkatalog/kategorien"),
+    create: (payload: any) => api.post("/admin/materialkatalog/kategorien", payload),
+    remove: (id: string) => api.delete(`/admin/materialkatalog/kategorien/${id}`),
+  },
+  farben: {
+    list: (farbstandard?: string) => api.get("/admin/materialkatalog/farben", { params: { farbstandard } }),
+    create: (payload: any) => api.post("/admin/materialkatalog/farben", payload),
+    remove: (id: string) => api.delete(`/admin/materialkatalog/farben/${id}`),
+  },
+  produktfamilien: {
+    list: (params?: { hersteller_id?: string; kategorie_id?: string }) => api.get("/admin/materialkatalog/produktfamilien", { params }),
+    create: (payload: any) => api.post("/admin/materialkatalog/produktfamilien", payload),
+    remove: (id: string) => api.delete(`/admin/materialkatalog/produktfamilien/${id}`),
+  },
+  produkte: {
+    list: (params?: { produktfamilie_id?: string; produkttyp?: string; nur_aktive?: boolean }) => api.get("/admin/materialkatalog/produkte", { params }),
+    create: (payload: any) => api.post("/admin/materialkatalog/produkte", payload),
+    update: (id: string, payload: any) => api.patch(`/admin/materialkatalog/produkte/${id}`, payload),
+    remove: (id: string) => api.delete(`/admin/materialkatalog/produkte/${id}`),
+  },
+  rohrverbandVorlagen: {
+    list: (nurAktive = false) => api.get("/admin/materialkatalog/rohrverband-vorlagen", { params: { nur_aktive: nurAktive } }),
+    create: (payload: any) => api.post("/admin/materialkatalog/rohrverband-vorlagen", payload),
+    remove: (id: string) => api.delete(`/admin/materialkatalog/rohrverband-vorlagen/${id}`),
+  },
+  kabelVorlagen: {
+    list: (nurAktive = false) => api.get("/admin/materialkatalog/kabel-vorlagen", { params: { nur_aktive: nurAktive } }),
+    create: (payload: any) => api.post("/admin/materialkatalog/kabel-vorlagen", payload),
+    remove: (id: string) => api.delete(`/admin/materialkatalog/kabel-vorlagen/${id}`),
+  },
+};
+
 // --- Redlining: Trassen, Netzelemente, Kabel direkt anlegen ---
 
 export const editApi = {

@@ -8,6 +8,7 @@ import ProjectDetail from "./ProjectDetail";
 import UserManagementAdmin from "./UserManagementAdmin";
 import AuditLogView from "./AuditLogView";
 import SystemStatus from "./SystemStatus";
+import MaterialCatalog from "./MaterialCatalog";
 
 const NAV = [
   { path: "", label: "Übersicht", end: true },
@@ -15,6 +16,7 @@ const NAV = [
   { path: "gebiete", label: "Gebiete" },
   { path: "cluster", label: "Cluster" },
   { path: "projekte", label: "Projekte" },
+  { path: "materialkatalog", label: "Materialkatalog" },
   { path: "audit-log", label: "Audit-Log" },
   { path: "systemstatus", label: "Systemstatus" },
 ];
@@ -53,6 +55,7 @@ export default function AdminLayout() {
           <Route path="cluster/:clusterId" element={<ClusterDetail />} />
           <Route path="projekte" element={<ProjectManagement />} />
           <Route path="projekte/:projectId" element={<ProjectDetail />} />
+          <Route path="materialkatalog" element={<MaterialCatalog />} />
           <Route path="audit-log" element={<AuditLogView />} />
           <Route path="systemstatus" element={<SystemStatus />} />
           <Route path="*" element={<Navigate to="" replace />} />

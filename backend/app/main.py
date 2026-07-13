@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.routers import (
     auth, map as map_router, rohrbelegung, netzschema, objekte, import_router, users,
     admin_areas, admin_clusters, admin_projects, admin_bauabschnitte, admin_users,
-    admin_audit, admin_system, admin_materials, edit,
+    admin_audit, admin_system, admin_materials, admin_numbering, edit,
 )
 
 limiter = Limiter(key_func=get_remote_address)
@@ -45,6 +45,7 @@ app.include_router(admin_users.router)
 app.include_router(admin_audit.router)
 app.include_router(admin_system.router)
 app.include_router(admin_materials.router)
+app.include_router(admin_numbering.router)
 app.include_router(edit.router)
 
 

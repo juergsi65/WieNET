@@ -81,10 +81,28 @@ class GebietCreate(BaseModel):
     parent_id: Optional[uuid.UUID] = None
     farbe: str = "#0ea5e9"
     notizen: Optional[str] = None
+    nummer: Optional[str] = None  # nur relevant, falls kein aktives Nummernschema existiert
+
+
+class GebietUpdate(BaseModel):
+    name: Optional[str] = None
+    kuerzel: Optional[str] = None
+    nummer: Optional[str] = None
+    beschreibung: Optional[str] = None
+    gebietstyp: Optional[str] = None
+    status: Optional[str] = None
+    betreiber: Optional[str] = None
+    eigentuemer: Optional[str] = None
+    organisation: Optional[str] = None
+    ansprechpartner: Optional[str] = None
+    parent_id: Optional[uuid.UUID] = None
+    farbe: Optional[str] = None
+    notizen: Optional[str] = None
 
 
 class GebietOut(BaseModel):
     id: uuid.UUID
+    nummer: Optional[str] = None
     name: str
     kuerzel: Optional[str]
     beschreibung: Optional[str]
@@ -146,7 +164,8 @@ class ProjektOut(BaseModel):
 
 class ClusterCreate(BaseModel):
     name: str
-    nummer: Optional[str] = None
+    nummer: Optional[str] = None  # nur relevant, falls kein aktives Nummernschema existiert
+    kuerzel: Optional[str] = None
     beschreibung: Optional[str] = None
     typ: Optional[str] = None
     status: str = "geplant"
@@ -165,10 +184,28 @@ class ClusterCreate(BaseModel):
     notizen: Optional[str] = None
 
 
+class ClusterUpdate(BaseModel):
+    name: Optional[str] = None
+    nummer: Optional[str] = None
+    kuerzel: Optional[str] = None
+    beschreibung: Optional[str] = None
+    typ: Optional[str] = None
+    status: Optional[str] = None
+    farbe: Optional[str] = None
+    prioritaet: Optional[int] = None
+    gebiet_id: Optional[uuid.UUID] = None
+    project_id: Optional[uuid.UUID] = None
+    projektleiter_id: Optional[uuid.UUID] = None
+    planer_id: Optional[uuid.UUID] = None
+    ausbauziel: Optional[int] = None
+    notizen: Optional[str] = None
+
+
 class ClusterOut(BaseModel):
     id: uuid.UUID
     name: str
     nummer: Optional[str]
+    kuerzel: Optional[str] = None
     beschreibung: Optional[str]
     typ: Optional[str]
     status: str
@@ -181,6 +218,29 @@ class ClusterOut(BaseModel):
     anzahl_geplante_anschluesse: int
     anzahl_aktive_anschluesse: int
     geometrie: Optional[dict] = None
+
+
+class ClusterMergeIds(BaseModel):
+    cluster_ids: list[uuid.UUID]
+
+
+class ClusterMergeVorschau(BaseModel):
+    anzahl_cluster: int
+    kombinierte_flaeche_m2: float
+    anzahl_trassen: int
+    anzahl_netzelemente: int
+    unterschiedliche_gebiete: bool
+    unterschiedliche_projekte: bool
+    vorschlag_name: str
+
+
+class ClusterMergeCreate(BaseModel):
+    cluster_ids: list[uuid.UUID]
+    name: str
+    kuerzel: Optional[str] = None
+    gebiet_id: Optional[uuid.UUID] = None
+    project_id: Optional[uuid.UUID] = None
+    farbe: str = "#f59e0b"
 
 
 class ClusterZuordnungsVorschau(BaseModel):

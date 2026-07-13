@@ -121,18 +121,43 @@ Farbname jedes Rohrs (aufgelöst aus dem Materialkatalog statt eines reinen
 Hex-Werts), unabhängig davon farblich unterscheidbar von der Belegungsmarkierung
 (weißer Punkt = Rohr belegt).
 
+**Konfigurierbares, transaktionssicheres Nummernsystem** (Adminbereich →
+Nummernkreise): pro Objekttyp (Gebiet, Cluster, Projekt, Bauabschnitt, Trasse) ein
+frei definierbares Muster (z. B. `G-{sequence:03d}` oder
+`{gebiet_code}-C-{sequence:03d}`) mit wählbarem Zähler-Geltungsbereich (global, je
+Gebiet, je Cluster, je Projekt); höchstens ein aktives Schema je Objekttyp
+(serverseitig über einen partiellen Unique-Index erzwungen), ältere Schemata bleiben
+als Historie erhalten. Die Nummernvergabe selbst läuft über ein atomares
+`INSERT … ON CONFLICT DO UPDATE … RETURNING` je Zählerkreis - unter Postgres'
+Zeilensperren garantiert lückenlose, eindeutige Nummern auch bei gleichzeitigen
+Anfragen (mit 50 parallelen Anfragen getestet: keine Duplikate, keine Lücken). Jede
+vergebene Nummer wird zusätzlich in einer Historientabelle protokolliert, die auch
+nach Löschung des Objekts erhalten bleibt. Gebiete und Cluster erhalten beim Anlegen
+automatisch eine Nummer, sofern ein aktives Schema existiert; ohne aktives Schema
+funktioniert das Anlegen unverändert ohne Nummer.
+
+**Gebiete und Cluster bearbeiten/zusammenführen:** Gebiete und Cluster können jetzt
+nachträglich umbenannt, mit Kürzel versehen, in Status/Farbe geändert und (Cluster)
+einem anderen Gebiet oder Projekt zugeordnet werden (zuvor gab es dafür **keinen**
+Backend-Endpunkt). Zwei oder mehr Cluster lassen sich zu einem neuen Cluster
+zusammenführen: eine Vorschau zeigt vorab kombinierte Fläche (räumliche Vereinigung
+der Polygone via PostGIS `ST_Union`), Anzahl betroffener Trassen/Netzelemente und
+warnt, falls die gewählten Cluster unterschiedlichen Gebieten oder Projekten
+angehören. Nach Bestätigung werden alle zugeordneten Objekte (Trassen, Netzelemente,
+Cluster-Zuweisungen) transaktional auf den neuen Cluster umgehängt und die
+Quell-Cluster gelöscht.
+
 ### Bewusst nicht enthalten (nächste Ausbaustufe)
 
-Professionelle Gebiets-/Cluster-Erweiterung (Teilen/Zusammenführen, automatische
-Clusterung mit Vorschau), transaktionssicheres konfigurierbares Nummernsystem,
-vollständige Löschfunktionen für alle Objekttypen (aktuell: Cluster/Gebiete/
-Materialkatalog-Einträge mit Abhängigkeitsschutz, weitere folgen), KML-/
-Shapefile-Import für Gebietsgrenzen, Polygon-Bearbeitungswerkzeuge (Teilen/
-Zusammenführen), vollständiges Exportcenter (PDF-/Excel-Berichte mit mehreren
-Tabellenblättern), Daten-Explorer mit speicherbaren Ansichten, Datenqualitätsprüfung,
-Hintergrundjobs mit Fortschrittsanzeige, Zwei-Faktor-Authentifizierung, automatisierte
-Testsuite. Das Datenbankschema ist so angelegt, dass diese Funktionen ohne erneute
-Schemaänderung ergänzt werden können.
+Cluster-Teilen (Split, als Gegenstück zum Zusammenführen), automatische Clusterung
+nach Adresse/Fläche/Distanz mit Vorschau, vollständige Löschfunktionen für alle
+verbleibenden Objekttypen (aktuell: Cluster/Gebiete/Materialkatalog-Einträge mit
+Abhängigkeitsschutz, weitere folgen), KML-/Shapefile-Import für Gebietsgrenzen,
+Polygon-Bearbeitungswerkzeuge, vollständiges Exportcenter (PDF-/Excel-Berichte mit
+mehreren Tabellenblättern), Daten-Explorer mit speicherbaren Ansichten,
+Datenqualitätsprüfung, Hintergrundjobs mit Fortschrittsanzeige,
+Zwei-Faktor-Authentifizierung, automatisierte Testsuite. Das Datenbankschema ist so
+angelegt, dass diese Funktionen ohne erneute Schemaänderung ergänzt werden können.
 
 ## Voraussetzungen für den Proxmox-Betrieb
 

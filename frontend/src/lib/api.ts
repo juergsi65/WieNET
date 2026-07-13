@@ -60,6 +60,7 @@ export const adminAreaApi = {
   list: (withGeometry = false) => api.get("/admin/areas", { params: { with_geometry: withGeometry } }),
   get: (id: string) => api.get(`/admin/areas/${id}`),
   create: (payload: any) => api.post("/admin/areas", payload),
+  update: (id: string, payload: any) => api.patch(`/admin/areas/${id}`, payload),
   remove: (id: string) => api.delete(`/admin/areas/${id}`),
 };
 
@@ -68,11 +69,25 @@ export const adminClusterApi = {
     api.get("/admin/clusters", { params }),
   get: (id: string) => api.get(`/admin/clusters/${id}`),
   create: (payload: any) => api.post("/admin/clusters", payload),
+  update: (id: string, payload: any) => api.patch(`/admin/clusters/${id}`, payload),
   remove: (id: string) => api.delete(`/admin/clusters/${id}`),
   stats: (id: string) => api.get(`/admin/clusters/${id}/stats`),
   zuordnungVorschau: (id: string) => api.get(`/admin/clusters/${id}/zuordnung/vorschau`),
   zuordnungBestaetigen: (id: string, objekt_typen: string[]) =>
     api.post(`/admin/clusters/${id}/zuordnung/bestaetigen`, { objekt_typen }),
+  mergeVorschau: (cluster_ids: string[]) => api.post("/admin/clusters/merge/vorschau", { cluster_ids }),
+  merge: (payload: { cluster_ids: string[]; name: string; kuerzel?: string; gebiet_id?: string | null; project_id?: string | null; farbe?: string }) =>
+    api.post("/admin/clusters/merge", payload),
+};
+
+export const numberingApi = {
+  list: (entity_type?: string) => api.get("/admin/nummernschemata", { params: { entity_type } }),
+  create: (payload: { entity_type: string; name: string; pattern: string; scope: string; start_value: number }) =>
+    api.post("/admin/nummernschemata", payload),
+  activate: (id: string) => api.post(`/admin/nummernschemata/${id}/aktivieren`),
+  remove: (id: string) => api.delete(`/admin/nummernschemata/${id}`),
+  vorschau: (entity_type: string, params?: { gebiet_id?: string; cluster_id?: string; projekt_id?: string }) =>
+    api.get(`/admin/nummernschemata/vorschau/${entity_type}`, { params }),
 };
 
 export const adminProjectApi = {

@@ -2,20 +2,22 @@ import json
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import func
+from sqlalchemy import func, bindparam, text
 from sqlalchemy.orm import Session
 from app.core.geometry import geojson_to_multipolygon_ewkb
 
 from app.core.database import get_db
 from app.core.audit import log_action
 from app.core.permissions import require_global_permission, user_accessible_cluster_ids
+from app.core.numbering import get_active_schema, generate_nummer, scope_key_und_kontext
 from app.models.admin import (
     Cluster, Permission, ObjektClusterZuordnung, ZuordnungsRelation,
 )
 from app.models.infrastructure import Trasse, Netzelement
 from app.models.user import User
 from app.schemas.admin_schemas import (
-    ClusterCreate, ClusterOut, ClusterZuordnungsVorschau, ClusterZuordnungBestaetigen, ClusterStatsOut,
+    ClusterCreate, ClusterUpdate, ClusterOut, ClusterZuordnungsVorschau, ClusterZuordnungBestaetigen, ClusterStatsOut,
+    ClusterMergeIds, ClusterMergeVorschau, ClusterMergeCreate,
 )
 
 router = APIRouter(prefix="/api/admin/clusters", tags=["admin-cluster"])
@@ -26,7 +28,7 @@ def to_out(db: Session, c: Cluster, with_geom: bool = False) -> ClusterOut:
     if with_geom:
         geom = json.loads(db.scalar(func.ST_AsGeoJSON(c.geometrie)))
     return ClusterOut(
-        id=c.id, name=c.name, nummer=c.nummer, beschreibung=c.beschreibung, typ=c.typ,
+        id=c.id, name=c.name, nummer=c.nummer, kuerzel=c.kuerzel, beschreibung=c.beschreibung, typ=c.typ,
         status=c.status.value, flaeche_m2=c.flaeche_m2, farbe=c.farbe, prioritaet=c.prioritaet,
         gebiet_id=c.gebiet_id, project_id=c.project_id, ausbauziel=c.ausbauziel,
         anzahl_geplante_anschluesse=c.anzahl_geplante_anschluesse,
@@ -65,19 +67,56 @@ def create_cluster(
     geom = geojson_to_multipolygon_ewkb(payload.geometrie)
     flaeche = db.scalar(func.ST_Area(func.ST_Transform(geom, 3857)))
 
+    nummer = payload.nummer
+    schema = get_active_schema(db, "cluster")
+    if schema:
+        try:
+            scope_key, kontext = scope_key_und_kontext(db, schema.scope, gebiet_id=payload.gebiet_id, projekt_id=payload.project_id)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=f"Nummernvergabe fehlgeschlagen: {e}")
+        nummer = generate_nummer(db, schema, scope_key, kontext)
+
     c = Cluster(
-        name=payload.name, nummer=payload.nummer, beschreibung=payload.beschreibung,
+        name=payload.name, nummer=nummer, kuerzel=payload.kuerzel, beschreibung=payload.beschreibung,
         typ=payload.typ, status=payload.status, geometrie=geom, flaeche_m2=flaeche,
         farbe=payload.farbe, prioritaet=payload.prioritaet, gebiet_id=payload.gebiet_id,
         project_id=payload.project_id, projektleiter_id=payload.projektleiter_id,
         planer_id=payload.planer_id, baufirma=payload.baufirma, start_datum=payload.start_datum,
         geplantes_ende=payload.geplantes_ende, budget=payload.budget, ausbauziel=payload.ausbauziel,
-        notizen=payload.notizen,
+        notizen=payload.notizen, erstellt_von_id=user.id,
     )
     db.add(c)
     db.commit()
     db.refresh(c)
     log_action(db, user, "cluster_erstellt", "cluster", c.id, neuer_wert=payload.name,
+               cluster_id=c.id, project_id=c.project_id, area_id=c.gebiet_id, request=request)
+    return to_out(db, c, with_geom=True)
+
+
+@router.patch("/{cluster_id}", response_model=ClusterOut)
+def update_cluster(
+    cluster_id: uuid.UUID, payload: ClusterUpdate, request: Request, db: Session = Depends(get_db),
+    user: User = Depends(require_global_permission(Permission.cluster_bearbeiten)),
+):
+    c = db.get(Cluster, cluster_id)
+    if not c:
+        raise HTTPException(status_code=404, detail="Cluster nicht gefunden")
+
+    alt = f"{c.name} ({c.status.value}, Gebiet={c.gebiet_id}, Projekt={c.project_id})"
+    updates = payload.model_dump(exclude_unset=True)
+    if "status" in updates:
+        from app.models.admin import ClusterStatus
+        try:
+            updates["status"] = ClusterStatus(updates["status"])
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Ungültiger Status")
+    for field, value in updates.items():
+        setattr(c, field, value)
+    c.geaendert_von_id = user.id
+    db.commit()
+    db.refresh(c)
+    log_action(db, user, "cluster_aktualisiert", "cluster", c.id, alter_wert=alt,
+               neuer_wert=f"{c.name} ({c.status.value}, Gebiet={c.gebiet_id}, Projekt={c.project_id})",
                cluster_id=c.id, project_id=c.project_id, area_id=c.gebiet_id, request=request)
     return to_out(db, c, with_geom=True)
 
@@ -108,6 +147,95 @@ def delete_cluster(
     db.commit()
     log_action(db, user, "cluster_geloescht", "cluster", cluster_id, alter_wert=c.name, request=request)
     return {"status": "geloescht"}
+
+
+# --- Cluster zusammenführen ---
+
+@router.post("/merge/vorschau", response_model=ClusterMergeVorschau)
+def merge_vorschau(
+    payload: ClusterMergeIds, db: Session = Depends(get_db),
+    _user: User = Depends(require_global_permission(Permission.cluster_bearbeiten)),
+):
+    if len(payload.cluster_ids) < 2:
+        raise HTTPException(status_code=400, detail="Mindestens zwei Cluster für eine Zusammenführung nötig")
+    clusters = db.query(Cluster).filter(Cluster.id.in_(payload.cluster_ids)).all()
+    if len(clusters) != len(payload.cluster_ids):
+        raise HTTPException(status_code=404, detail="Ein oder mehrere Cluster nicht gefunden")
+
+    flaeche = db.query(func.ST_Area(func.ST_Transform(func.ST_Union(Cluster.geometrie), 3857))).filter(
+        Cluster.id.in_(payload.cluster_ids)
+    ).scalar()
+    anzahl_trassen = db.query(Trasse).filter(Trasse.cluster_id.in_(payload.cluster_ids)).count()
+    anzahl_netz = db.query(Netzelement).filter(Netzelement.cluster_id.in_(payload.cluster_ids)).count()
+    gebiete = {c.gebiet_id for c in clusters}
+    projekte = {c.project_id for c in clusters}
+
+    return ClusterMergeVorschau(
+        anzahl_cluster=len(clusters), kombinierte_flaeche_m2=flaeche or 0,
+        anzahl_trassen=anzahl_trassen, anzahl_netzelemente=anzahl_netz,
+        unterschiedliche_gebiete=len(gebiete) > 1, unterschiedliche_projekte=len(projekte) > 1,
+        vorschlag_name=" + ".join(c.name for c in clusters),
+    )
+
+
+@router.post("/merge", response_model=ClusterOut)
+def merge_clusters(
+    payload: ClusterMergeCreate, request: Request, db: Session = Depends(get_db),
+    user: User = Depends(require_global_permission(Permission.cluster_bearbeiten)),
+):
+    """Führt mehrere Cluster zu einem neuen zusammen: Geometrie wird per ST_Union
+    vereinigt, alle zugeordneten Trassen/Netzelemente/Zuordnungen wandern auf den
+    neuen Cluster, die Ausgangscluster werden anschließend entfernt - alles in
+    einer Transaktion (schlägt ein Schritt fehl, bleibt der Ausgangszustand
+    unverändert bestehen)."""
+    if len(payload.cluster_ids) < 2:
+        raise HTTPException(status_code=400, detail="Mindestens zwei Cluster für eine Zusammenführung nötig")
+    clusters = db.query(Cluster).filter(Cluster.id.in_(payload.cluster_ids)).all()
+    if len(clusters) != len(payload.cluster_ids):
+        raise HTTPException(status_code=404, detail="Ein oder mehrere Cluster nicht gefunden")
+
+    nummer = None
+    schema = get_active_schema(db, "cluster")
+    if schema:
+        try:
+            scope_key, kontext = scope_key_und_kontext(db, schema.scope, gebiet_id=payload.gebiet_id, projekt_id=payload.project_id)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=f"Nummernvergabe fehlgeschlagen: {e}")
+        nummer = generate_nummer(db, schema, scope_key, kontext)
+
+    stmt = text(
+        """
+        INSERT INTO clusters (id, name, kuerzel, nummer, beschreibung, geometrie, flaeche_m2, farbe,
+                               status, gebiet_id, project_id, erstellt_von_id, erstellt_am)
+        SELECT gen_random_uuid(), :name, :kuerzel, :nummer,
+               'Zusammengeführt aus: ' || string_agg(name, ', '),
+               ST_Multi(ST_Union(geometrie)), ST_Area(ST_Transform(ST_Union(geometrie), 3857)), :farbe,
+               'geplant', :gebiet_id, :project_id, :user_id, now()
+        FROM clusters WHERE id IN :ids
+        RETURNING id
+        """
+    ).bindparams(bindparam("ids", expanding=True))
+    neuer_id = db.execute(stmt, {
+        "name": payload.name, "kuerzel": payload.kuerzel, "nummer": nummer, "farbe": payload.farbe,
+        "gebiet_id": str(payload.gebiet_id) if payload.gebiet_id else None,
+        "project_id": str(payload.project_id) if payload.project_id else None,
+        "user_id": str(user.id), "ids": [str(i) for i in payload.cluster_ids],
+    }).scalar()
+
+    alte_ids = payload.cluster_ids
+    db.query(Trasse).filter(Trasse.cluster_id.in_(alte_ids)).update({"cluster_id": neuer_id}, synchronize_session=False)
+    db.query(Netzelement).filter(Netzelement.cluster_id.in_(alte_ids)).update({"cluster_id": neuer_id}, synchronize_session=False)
+    db.query(ObjektClusterZuordnung).filter(ObjektClusterZuordnung.cluster_id.in_(alte_ids)).update(
+        {"cluster_id": neuer_id}, synchronize_session=False
+    )
+    db.query(Cluster).filter(Cluster.id.in_(alte_ids)).delete(synchronize_session=False)
+    db.commit()
+
+    neuer = db.get(Cluster, neuer_id)
+    log_action(db, user, "cluster_zusammengefuehrt", "cluster", neuer_id,
+               alter_wert=", ".join(str(i) for i in alte_ids), neuer_wert=payload.name,
+               cluster_id=neuer_id, area_id=payload.gebiet_id, project_id=payload.project_id, request=request)
+    return to_out(db, neuer, with_geom=True)
 
 
 # --- Automatische räumliche Zuordnung ---

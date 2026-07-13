@@ -28,6 +28,7 @@ class GebietStatus(str, enum.Enum):
 class Gebiet(Base):
     __tablename__ = "areas"
     id = uuid_col()
+    nummer = Column(String, nullable=True)  # automatisch vergeben, sofern ein aktives Nummernschema existiert
     name = Column(String, nullable=False)
     kuerzel = Column(String, nullable=True)
     beschreibung = Column(Text, nullable=True)
@@ -42,11 +43,15 @@ class Gebiet(Base):
     parent_id = Column(UUID(as_uuid=True), ForeignKey("areas.id"), nullable=True)
     farbe = Column(String, default="#0ea5e9")
     notizen = Column(Text, nullable=True)
+    erstellt_von_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    geaendert_von_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     erstellt_am = Column(DateTime(timezone=True), server_default=func.now())
     geaendert_am = Column(DateTime(timezone=True), onupdate=func.now())
 
     children = relationship("Gebiet", backref="parent", remote_side=[id])
     clusters = relationship("Cluster", back_populates="gebiet")
+    erstellt_von = relationship("User", foreign_keys=[erstellt_von_id])
+    geaendert_von = relationship("User", foreign_keys=[geaendert_von_id])
 
 
 # ---------------------------------------------------------------------------
@@ -117,6 +122,7 @@ class Cluster(Base):
     id = uuid_col()
     name = Column(String, nullable=False)
     nummer = Column(String, nullable=True)
+    kuerzel = Column(String, nullable=True)
     beschreibung = Column(Text, nullable=True)
     typ = Column(String, nullable=True)  # FTTH-Ausbaucluster, PON-Cluster, Baucluster, ...
     status = Column(Enum(ClusterStatus), default=ClusterStatus.geplant)
@@ -137,12 +143,16 @@ class Cluster(Base):
     anzahl_geplante_anschluesse = Column(Integer, default=0)
     anzahl_aktive_anschluesse = Column(Integer, default=0)
     notizen = Column(Text, nullable=True)
+    erstellt_von_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    geaendert_von_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     erstellt_am = Column(DateTime(timezone=True), server_default=func.now())
     geaendert_am = Column(DateTime(timezone=True), onupdate=func.now())
 
     gebiet = relationship("Gebiet", back_populates="clusters")
     projekt = relationship("Projekt", back_populates="clusters")
     bauabschnitte = relationship("ProjektBauabschnitt", back_populates="cluster")
+    ersteller = relationship("User", foreign_keys=[erstellt_von_id])
+    bearbeiter = relationship("User", foreign_keys=[geaendert_von_id])
 
 
 # ---------------------------------------------------------------------------
@@ -280,9 +290,13 @@ class AuditLogEintrag(Base):
     objekt_id = Column(UUID(as_uuid=True), nullable=True)
     alter_wert = Column(Text, nullable=True)
     neuer_wert = Column(Text, nullable=True)
-    area_id = Column(UUID(as_uuid=True), ForeignKey("areas.id"), nullable=True)
-    cluster_id = Column(UUID(as_uuid=True), ForeignKey("clusters.id"), nullable=True)
-    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=True)
+    # ON DELETE SET NULL: das Audit-Log muss die historische Aktion nachvollziehbar
+    # halten, auch nachdem das referenzierte Gebiet/Cluster/Projekt gelöscht wurde -
+    # sonst blockiert jeder frühere Audit-Eintrag (z.B. "cluster_erstellt") die
+    # spätere Löschung des Objekts mit einem FK-Verstoß.
+    area_id = Column(UUID(as_uuid=True), ForeignKey("areas.id", ondelete="SET NULL"), nullable=True)
+    cluster_id = Column(UUID(as_uuid=True), ForeignKey("clusters.id", ondelete="SET NULL"), nullable=True)
+    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id", ondelete="SET NULL"), nullable=True)
     ip_adresse = Column(String, nullable=True)
     ergebnis = Column(Enum(AuditErgebnis), default=AuditErgebnis.erfolg)
     fehlerbeschreibung = Column(Text, nullable=True)

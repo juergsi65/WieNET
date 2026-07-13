@@ -1,12 +1,25 @@
 import { useEffect, useState } from "react";
-import { rohrbelegungApi, editApi } from "../lib/api";
+import { rohrbelegungApi, editApi, materialApi } from "../lib/api";
 import { toast } from "../store/useToastStore";
 
 interface RohrBelegung {
-  rohr: { id: string; nummer: number; farbe: string; durchmesser_mm: number | null; typ: string | null; status: string };
+  rohr: { id: string; nummer: number; farbe: string; farbe_id?: string | null; durchmesser_mm: number | null; typ: string | null; status: string };
   kabel: { id: string; bezeichnung: string; typ: string; fasernanzahl: number | null; belegte_fasern: number; status: string } | null;
   segment_start_m: number | null;
   segment_ende_m: number | null;
+}
+
+interface FarbeInfo {
+  id: string; name: string; hex_wert: string | null; streifenfarbe_id: string | null; streifenanzahl: number;
+}
+
+/** Löst die echte Rohrfarbe (Grund-/Streifenfarbe aus dem Materialkatalog) auf, mit Fallback auf
+ * das freie rohr.farbe-Hexfeld für Altdaten/generisch angelegte Rohrverbände ohne Katalogbezug. */
+function resolveFarbe(farbeId: string | null | undefined, fallbackHex: string, farben: FarbeInfo[]) {
+  const f = farbeId ? farben.find((x) => x.id === farbeId) : undefined;
+  if (!f) return { name: null as string | null, basisHex: fallbackHex, streifenHex: null as string | null };
+  const streifen = f.streifenfarbe_id ? farben.find((x) => x.id === f.streifenfarbe_id) : undefined;
+  return { name: f.name, basisHex: f.hex_wert ?? fallbackHex, streifenHex: streifen?.hex_wert ?? null };
 }
 
 interface Rohrverband {
@@ -32,6 +45,7 @@ function ringLayout(count: number, radius = 70) {
 
 export default function RohrQuerschnitt({ trasseId, canEdit = false }: { trasseId: string; canEdit?: boolean }) {
   const [verbaende, setVerbaende] = useState<Rohrverband[]>([]);
+  const [farben, setFarben] = useState<FarbeInfo[]>([]);
   const [hovered, setHovered] = useState<RohrBelegung | null>(null);
   const [selected, setSelected] = useState<RohrBelegung | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,6 +60,7 @@ export default function RohrQuerschnitt({ trasseId, canEdit = false }: { trasseI
 
   useEffect(() => {
     reload();
+    materialApi.farben.list().then((r) => setFarben(r.data));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trasseId]);
 
@@ -65,6 +80,9 @@ export default function RohrQuerschnitt({ trasseId, canEdit = false }: { trasseI
                 {rv.rohre.map((rb, idx) => {
                   const pos = positions[idx];
                   const belegt = !!rb.kabel;
+                  const { basisHex, streifenHex } = resolveFarbe(rb.rohr.farbe_id, rb.rohr.farbe, farben);
+                  const clipId = `rohr-clip-${rb.rohr.id}`;
+                  const textIstHell = /^#(f|e|d)/i.test(basisHex); // grobe Näherung für lesbaren Textkontrast
                   return (
                     <g
                       key={rb.rohr.id}
@@ -74,18 +92,27 @@ export default function RohrQuerschnitt({ trasseId, canEdit = false }: { trasseI
                       onClick={() => setSelected(rb)}
                       style={{ cursor: "pointer" }}
                     >
+                      {streifenHex && (
+                        <clipPath id={clipId}><circle r={18} /></clipPath>
+                      )}
+                      {/* Grundfarbe des Rohrs - immer sichtbar, unabhängig von der Belegung */}
                       <circle
                         r={18}
-                        fill={belegt ? rb.rohr.farbe : "#ffffff"}
+                        fill={basisHex}
                         stroke={rb.rohr.status === "blockiert" ? "#dc2626" : rb.rohr.status === "beschaedigt" ? "#f59e0b" : "#475569"}
                         strokeWidth={rb.rohr.status === "blockiert" || rb.rohr.status === "beschaedigt" ? 3 : 1.5}
                         opacity={rb.rohr.status === "blockiert" ? 0.5 : 1}
                       />
-                      {belegt && (
-                        <circle r={7} fill="#ffffff" fillOpacity={0.85} />
+                      {/* Streifenfarbe/-kennzeichnung, falls die Farbe im Materialkatalog einen Streifen definiert */}
+                      {streifenHex && (
+                        <rect x={-18} y={-6} width={36} height={12} fill={streifenHex} clipPath={`url(#${clipId})`} />
                       )}
-                      <text textAnchor="middle" dy={4} fontSize={10} fontWeight={600}
-                            fill={belegt ? "#1e293b" : "#334155"}>
+                      {/* Belegungsmarkierung: weißer Punkt = Rohr ist belegt */}
+                      {belegt && (
+                        <circle r={6} fill="#ffffff" fillOpacity={0.9} stroke="#00000022" />
+                      )}
+                      <text textAnchor="middle" dy={belegt ? 22 : 4} fontSize={10} fontWeight={600}
+                            fill={belegt ? "#334155" : textIstHell ? "#334155" : "#ffffff"}>
                         {rb.rohr.nummer}
                       </text>
                     </g>
@@ -97,7 +124,10 @@ export default function RohrQuerschnitt({ trasseId, canEdit = false }: { trasseI
                 {hovered ? (
                   <div className="text-sm">
                     <p className="font-medium text-ink-900 dark:text-slate-100">Rohr {hovered.rohr.nummer} · {STATUS_LABEL[hovered.rohr.status]}</p>
-                    <p className="text-slate-500">Durchmesser: {hovered.rohr.durchmesser_mm ?? "–"} mm · {hovered.rohr.typ ?? "–"}</p>
+                    <p className="text-slate-500">
+                      {resolveFarbe(hovered.rohr.farbe_id, hovered.rohr.farbe, farben).name ?? "Farbe unbekannt"} ·{" "}
+                      {hovered.rohr.durchmesser_mm ?? "–"} mm · {hovered.rohr.typ ?? "–"}
+                    </p>
                     {hovered.kabel ? (
                       <div className="mt-2 space-y-0.5">
                         <p><span className="text-slate-400">Kabel:</span> {hovered.kabel.bezeichnung}</p>
@@ -130,7 +160,7 @@ export default function RohrQuerschnitt({ trasseId, canEdit = false }: { trasseI
                           style={{
                             left: 0,
                             right: 0,
-                            backgroundColor: rb.rohr.farbe,
+                            backgroundColor: resolveFarbe(rb.rohr.farbe_id, rb.rohr.farbe, farben).basisHex,
                             opacity: 0.85,
                           }}
                           title={rb.kabel.bezeichnung}
@@ -152,6 +182,7 @@ export default function RohrQuerschnitt({ trasseId, canEdit = false }: { trasseI
             <h3 className="font-semibold text-lg mb-3">Rohr {selected.rohr.nummer} Details</h3>
             <dl className="text-sm space-y-1.5">
               <div className="flex justify-between"><dt className="text-slate-400">Status</dt><dd>{STATUS_LABEL[selected.rohr.status]}</dd></div>
+              <div className="flex justify-between"><dt className="text-slate-400">Farbe</dt><dd>{resolveFarbe(selected.rohr.farbe_id, selected.rohr.farbe, farben).name ?? "unbekannt"}</dd></div>
               <div className="flex justify-between"><dt className="text-slate-400">Durchmesser</dt><dd>{selected.rohr.durchmesser_mm ?? "–"} mm</dd></div>
               <div className="flex justify-between"><dt className="text-ink-400">Typ</dt><dd>{selected.rohr.typ ?? "–"}</dd></div>
               {selected.kabel && (
@@ -181,8 +212,14 @@ export default function RohrQuerschnitt({ trasseId, canEdit = false }: { trasseI
 
 function KabelEinziehenForm({ rohrId, onCreated }: { rohrId: string; onCreated: () => void }) {
   const [form, setForm] = useState({ bezeichnung: "", typ: "glasfaser", fasernanzahl: "24", hersteller: "" });
+  const [vorlagen, setVorlagen] = useState<any[]>([]);
+  const [vorlageId, setVorlageId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    materialApi.kabelVorlagen.list(true).then((r) => setVorlagen(r.data));
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -190,9 +227,12 @@ function KabelEinziehenForm({ rohrId, onCreated }: { rohrId: string; onCreated: 
     setError(null);
     try {
       await editApi.createKabel({
-        bezeichnung: form.bezeichnung, typ: form.typ,
+        bezeichnung: form.bezeichnung,
+        typ: form.typ,
         fasernanzahl: form.fasernanzahl ? Number(form.fasernanzahl) : null,
-        hersteller: form.hersteller || null, rohr_id: rohrId,
+        hersteller: form.hersteller || null,
+        rohr_id: rohrId,
+        kabel_vorlage_id: vorlageId || null,
       });
       toast.success(`Kabel "${form.bezeichnung}" eingezogen.`);
       onCreated();
@@ -212,17 +252,28 @@ function KabelEinziehenForm({ rohrId, onCreated }: { rohrId: string; onCreated: 
       <input required placeholder="Bezeichnung" value={form.bezeichnung}
              onChange={(e) => setForm({ ...form, bezeichnung: e.target.value })}
              className="w-full rounded-md border border-ink-100 dark:border-slate-600 dark:bg-slate-700 px-2.5 py-1.5 text-sm" />
-      <div className="grid grid-cols-2 gap-2">
-        <select value={form.typ} onChange={(e) => setForm({ ...form, typ: e.target.value })}
-                className="rounded-md border border-ink-100 dark:border-slate-600 dark:bg-slate-700 px-2.5 py-1.5 text-sm">
-          <option value="glasfaser">Glasfaser</option>
-          <option value="kupfer">Kupfer</option>
+
+      {vorlagen.length > 0 && (
+        <select value={vorlageId} onChange={(e) => setVorlageId(e.target.value)}
+                className="w-full rounded-md border border-ink-100 dark:border-slate-600 dark:bg-slate-700 px-2.5 py-1.5 text-sm">
+          <option value="">– kein Katalogprodukt (freie Angaben unten) –</option>
+          {vorlagen.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
         </select>
-        <select value={form.fasernanzahl} onChange={(e) => setForm({ ...form, fasernanzahl: e.target.value })}
-                className="rounded-md border border-ink-100 dark:border-slate-600 dark:bg-slate-700 px-2.5 py-1.5 text-sm">
-          {[12, 24, 48, 96, 144].map((n) => <option key={n} value={n}>{n} Fasern</option>)}
-        </select>
-      </div>
+      )}
+
+      {!vorlageId && (
+        <div className="grid grid-cols-2 gap-2">
+          <select value={form.typ} onChange={(e) => setForm({ ...form, typ: e.target.value })}
+                  className="rounded-md border border-ink-100 dark:border-slate-600 dark:bg-slate-700 px-2.5 py-1.5 text-sm">
+            <option value="glasfaser">Glasfaser</option>
+            <option value="kupfer">Kupfer</option>
+          </select>
+          <select value={form.fasernanzahl} onChange={(e) => setForm({ ...form, fasernanzahl: e.target.value })}
+                  className="rounded-md border border-ink-100 dark:border-slate-600 dark:bg-slate-700 px-2.5 py-1.5 text-sm">
+            {[12, 24, 48, 96, 144].map((n) => <option key={n} value={n}>{n} Fasern</option>)}
+          </select>
+        </div>
+      )}
       <button type="submit" disabled={loading} className="w-full bg-ink-900 text-white rounded-md py-1.5 text-sm font-medium disabled:opacity-50">
         {loading ? "Speichert…" : "Kabel einziehen"}
       </button>

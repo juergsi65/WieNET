@@ -98,8 +98,7 @@ ein Kabel eingezogen werden.
 
 **Materialkatalog** (Adminbereich → Materialkatalog): Hersteller, Produktkategorien,
 Produktfamilien, Produkte, Farben sowie Rohrverband- und Kabelvorlagen als
-versionierbare Stammdaten - Grundlage für die Materialauswahl im Redlining (folgt in
-einer nächsten Ausbaustufe). Enthält bereits die zwei in der Branche etablierten,
+versionierbare Stammdaten. Enthält bereits die zwei in der Branche etablierten,
 öffentlich dokumentierten Farbstandards **DIN EN 60794-1-1** (Rohr-/Aderfarben) und
 **TIA-598-C** (Faserfarben) mit je 12 Grund- und 12 Streifenkombinationsfarben, ein
 Hersteller-Gerüst für gabocom (gabo Systemtechnik GmbH), Hexatronic und Prysmian
@@ -111,14 +110,24 @@ tatsächlicher Datenblätter vervollständigt werden. Lesen ist allen Rollen erl
 Anlegen/Ändern/Löschen ist auf die Rolle Administrator beschränkt
 (serverseitig geprüft über die Berechtigung `systemeinstellungen_aendern`).
 
+**Materialauswahl im Redlining:** Beim Zeichnen einer Trasse kann zwischen „Aus
+Materialkatalog" (echte Rohrverbandvorlage mit Grund-/Streifenfarbe je Rohr, direkt
+per Farbvorschau auswählbar), „Generisch" (bisherige freie Rohranzahl/-typ-Eingabe,
+weiterhin unterstützt) und „Kein Rohrverband" gewählt werden. Beim Einziehen eines
+Kabels in ein freies Rohr steht ebenso eine Kabelvorlage aus dem Materialkatalog zur
+Auswahl (Kabeltyp/Faseranzahl/Hersteller werden übernommen), alternativ weiterhin
+freie Eingabe. Die Rohrquerschnittsansicht zeigt Grundfarbe, Streifenfarbe und
+Farbname jedes Rohrs (aufgelöst aus dem Materialkatalog statt eines reinen
+Hex-Werts), unabhängig davon farblich unterscheidbar von der Belegungsmarkierung
+(weißer Punkt = Rohr belegt).
+
 ### Bewusst nicht enthalten (nächste Ausbaustufe)
 
-Materialauswahl direkt im Redlining-Formular (aktuell nur über den Adminbereich
-pflegbar, Verknüpfung mit Trasse/Rohr/Kabel folgt), professionelle Gebiets-/
-Cluster-Erweiterung (Teilen/Zusammenführen, automatische Clusterung mit Vorschau),
-transaktionssicheres konfigurierbares Nummernsystem, vollständige Löschfunktionen
-für alle Objekttypen (aktuell: Cluster/Gebiete/Produkte mit Abhängigkeitsschutz,
-weitere folgen), KML-/Shapefile-Import für Gebietsgrenzen, Polygon-Bearbeitungswerkzeuge (Teilen/
+Professionelle Gebiets-/Cluster-Erweiterung (Teilen/Zusammenführen, automatische
+Clusterung mit Vorschau), transaktionssicheres konfigurierbares Nummernsystem,
+vollständige Löschfunktionen für alle Objekttypen (aktuell: Cluster/Gebiete/
+Materialkatalog-Einträge mit Abhängigkeitsschutz, weitere folgen), KML-/
+Shapefile-Import für Gebietsgrenzen, Polygon-Bearbeitungswerkzeuge (Teilen/
 Zusammenführen), vollständiges Exportcenter (PDF-/Excel-Berichte mit mehreren
 Tabellenblättern), Daten-Explorer mit speicherbaren Ansichten, Datenqualitätsprüfung,
 Hintergrundjobs mit Fortschrittsanzeige, Zwei-Faktor-Authentifizierung, automatisierte
@@ -227,6 +236,9 @@ Produktfamilien, Produkte, Farben, Rohrverband-/Kabelvorlagen). Kernbeziehungen:
 `Trasse → Rohrverband → Rohr ↔ Kabel`, Netzhierarchie über `Netzelement.parent_id`
 (OLT → PON → Splitter → FCP → Muffe → Hausanschluss), Cluster-Zuordnung über
 `cluster_id` (Hauptcluster) bzw. `object_cluster_assignments` (zusätzliche/
-schneidende Zuordnungen, ohne Geodaten zu duplizieren). Der Materialkatalog ist noch
-nicht mit `Rohr`/`Kabel` verknüpft (`Rohrverbandvorlage.produkt_id`/
-`Kabelvorlage.produkt_id` sind eigenständig) - das folgt mit der Redlining-Integration.
+schneidende Zuordnungen, ohne Geodaten zu duplizieren). Der Materialkatalog ist mit
+der Kerninfrastruktur verknüpft: `Rohrverband.vorlage_id` → `Rohrverbandvorlage`,
+`Rohr.farbe_id` → `Farbe` (das alte freie `Rohr.farbe`-Hexfeld bleibt als Fallback
+für Altdaten/generisch angelegte Rohrverbände ohne Katalogbezug erhalten),
+`Kabel.vorlage_id` → `Kabelvorlage`. Alle drei Fremdschlüssel sind nullable - Trassen
+ohne Materialkatalog-Bezug funktionieren unverändert weiter.

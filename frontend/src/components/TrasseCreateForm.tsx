@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { editApi } from "../lib/api";
+import { useEffect, useState } from "react";
+import { editApi, materialApi } from "../lib/api";
 import { toast } from "../store/useToastStore";
 
 interface Props {
@@ -19,8 +19,23 @@ export function TrasseFormModal({
     oberflaeche: "Asphalt", cluster_id: "", anzahl_rohre: "7",
     rohr_typ: "Mikrorohr", rohr_durchmesser: "10",
   });
+  const [rohrQuelle, setRohrQuelle] = useState<"keine" | "generisch" | "vorlage">("vorlage");
+  const [vorlagen, setVorlagen] = useState<any[]>([]);
+  const [farben, setFarben] = useState<any[]>([]);
+  const [vorlageId, setVorlageId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    materialApi.rohrverbandVorlagen.list(true).then((r) => {
+      setVorlagen(r.data);
+      if (r.data.length > 0) setVorlageId(r.data[0].id);
+    });
+    materialApi.farben.list().then((r) => setFarben(r.data));
+  }, []);
+
+  const ausgewaehlteVorlage = vorlagen.find((v) => v.id === vorlageId);
+  const farbeById = (id: string) => farben.find((f) => f.id === id);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,7 +50,8 @@ export function TrasseFormModal({
         oberflaeche: form.oberflaeche,
         geometrie,
         cluster_id: form.cluster_id || null,
-        anzahl_rohre: Number(form.anzahl_rohre) || 0,
+        rohrverband_vorlage_id: rohrQuelle === "vorlage" ? (vorlageId || null) : null,
+        anzahl_rohre: rohrQuelle === "generisch" ? (Number(form.anzahl_rohre) || 0) : 0,
         rohr_definition: { typ: form.rohr_typ, durchmesser_mm: Number(form.rohr_durchmesser) },
       });
       toast.success(`Trasse "${form.name}" angelegt (Planung).`);
@@ -97,28 +113,66 @@ export function TrasseFormModal({
 
           <div className="border-t border-ink-100 dark:border-slate-700 pt-3">
             <p className="text-xs font-medium uppercase tracking-wide text-ink-400 mb-2">Rohrverband (optional)</p>
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <label className="text-xs text-ink-400">Anzahl Rohre</label>
-                <input type="number" min="0" max="12" value={form.anzahl_rohre}
-                       onChange={(e) => setForm({ ...form, anzahl_rohre: e.target.value })}
-                       className="w-full rounded-md border border-ink-100 dark:border-slate-600 dark:bg-slate-700 px-2 py-1.5 text-sm mt-0.5" />
-              </div>
-              <div>
-                <label className="text-xs text-ink-400">Typ</label>
-                <select value={form.rohr_typ} onChange={(e) => setForm({ ...form, rohr_typ: e.target.value })}
-                        className="w-full rounded-md border border-ink-100 dark:border-slate-600 dark:bg-slate-700 px-2 py-1.5 text-sm mt-0.5">
-                  {ROHR_TYPEN.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs text-ink-400">Ø (mm)</label>
-                <input type="number" value={form.rohr_durchmesser}
-                       onChange={(e) => setForm({ ...form, rohr_durchmesser: e.target.value })}
-                       className="w-full rounded-md border border-ink-100 dark:border-slate-600 dark:bg-slate-700 px-2 py-1.5 text-sm mt-0.5" />
-              </div>
+            <div className="flex gap-1 mb-2">
+              {([
+                ["vorlage", "Aus Materialkatalog"],
+                ["generisch", "Generisch"],
+                ["keine", "Kein Rohrverband"],
+              ] as const).map(([val, label]) => (
+                <button key={val} type="button" onClick={() => setRohrQuelle(val)}
+                        className={`px-2.5 py-1 rounded-md text-xs font-medium ${
+                          rohrQuelle === val ? "bg-conduit-500 text-white" : "bg-paper-dim dark:bg-slate-700 text-ink-600 dark:text-slate-300"
+                        }`}>
+                  {label}
+                </button>
+              ))}
             </div>
-            <p className="text-xs text-ink-400 mt-1.5">0 = kein Rohrverband, nur die Trasse selbst wird angelegt.</p>
+
+            {rohrQuelle === "vorlage" && (
+              <div>
+                <select value={vorlageId} onChange={(e) => setVorlageId(e.target.value)}
+                        className="w-full rounded-md border border-ink-100 dark:border-slate-600 dark:bg-slate-700 px-3 py-2 text-sm">
+                  {vorlagen.length === 0 && <option value="">Keine Vorlagen im Materialkatalog vorhanden</option>}
+                  {vorlagen.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+                </select>
+                {ausgewaehlteVorlage && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {ausgewaehlteVorlage.positionen.map((p: any) => {
+                      const f = farbeById(p.rohrfarbe_id);
+                      return (
+                        <span key={p.id} title={`Rohr ${p.position}: ${f?.name ?? "?"}`}
+                              className="w-5 h-5 rounded-full border border-black/10"
+                              style={{ backgroundColor: f?.hex_wert ?? "#999" }} />
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {rohrQuelle === "generisch" && (
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="text-xs text-ink-400">Anzahl Rohre</label>
+                  <input type="number" min="1" max="12" value={form.anzahl_rohre}
+                         onChange={(e) => setForm({ ...form, anzahl_rohre: e.target.value })}
+                         className="w-full rounded-md border border-ink-100 dark:border-slate-600 dark:bg-slate-700 px-2 py-1.5 text-sm mt-0.5" />
+                </div>
+                <div>
+                  <label className="text-xs text-ink-400">Typ</label>
+                  <select value={form.rohr_typ} onChange={(e) => setForm({ ...form, rohr_typ: e.target.value })}
+                          className="w-full rounded-md border border-ink-100 dark:border-slate-600 dark:bg-slate-700 px-2 py-1.5 text-sm mt-0.5">
+                    {ROHR_TYPEN.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-ink-400">Ø (mm)</label>
+                  <input type="number" value={form.rohr_durchmesser}
+                         onChange={(e) => setForm({ ...form, rohr_durchmesser: e.target.value })}
+                         className="w-full rounded-md border border-ink-100 dark:border-slate-600 dark:bg-slate-700 px-2 py-1.5 text-sm mt-0.5" />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2 pt-1">

@@ -61,6 +61,7 @@ class Rohrverband(Base):
     id = uuid_col()
     trasse_id = Column(UUID(as_uuid=True), ForeignKey("trassen.id"), nullable=False)
     bezeichnung = Column(String, nullable=False)
+    vorlage_id = Column(UUID(as_uuid=True), ForeignKey("rohrverband_vorlagen.id"), nullable=True)
 
     trasse = relationship("Trasse", back_populates="rohrverbaende")
     rohre = relationship("Rohr", back_populates="rohrverband", cascade="all, delete-orphan", order_by="Rohr.nummer")
@@ -79,7 +80,8 @@ class Rohr(Base):
     id = uuid_col()
     rohrverband_id = Column(UUID(as_uuid=True), ForeignKey("rohrverbaende.id"), nullable=False)
     nummer = Column(Integer, nullable=False)
-    farbe = Column(String, nullable=False, default="#999999")
+    farbe = Column(String, nullable=False, default="#999999")  # Hex-Fallback, falls farbe_id nicht gesetzt (Altdaten)
+    farbe_id = Column(UUID(as_uuid=True), ForeignKey("farben.id"), nullable=True)  # echte Farbstammdaten inkl. Streifen
     durchmesser_mm = Column(Float, nullable=True)
     typ = Column(String, nullable=True)  # Mikrorohr, Schutzrohr, Leerrohr
     status = Column(Enum(RohrStatus), default=RohrStatus.frei)
@@ -108,6 +110,7 @@ class Kabel(Base):
     geometrie = Column(Geometry(geometry_type="LINESTRING", srid=4326), nullable=True)
     kabelanfang_id = Column(UUID(as_uuid=True), ForeignKey("netzelemente.id"), nullable=True)
     kabelende_id = Column(UUID(as_uuid=True), ForeignKey("netzelemente.id"), nullable=True)
+    vorlage_id = Column(UUID(as_uuid=True), ForeignKey("kabel_vorlagen.id"), nullable=True)
     erstellt_von_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
 
     belegungen = relationship("RohrKabelBelegung", back_populates="kabel")

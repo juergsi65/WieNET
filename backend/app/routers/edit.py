@@ -24,6 +24,7 @@ from app.models.infrastructure import (
     Trasse, Rohrverband, Rohr, RohrStatus, Kabel, KabelTyp, RohrKabelBelegung,
     Netzelement, NetzelementTyp, ObjektStatus,
 )
+from app.models.materials import Rohrverbandvorlage, Farbe, Kabelvorlage
 
 router = APIRouter(prefix="/api/edit", tags=["redlining"])
 
@@ -52,7 +53,11 @@ class TrasseCreateRedlining(BaseModel):
     cluster_id: Optional[uuid.UUID] = None
     bauabschnitt_id: Optional[uuid.UUID] = None
     notizen: Optional[str] = None
-    anzahl_rohre: int = 0  # 0 = kein Rohrverband anlegen
+    # Entweder eine echte Rohrverbandvorlage aus dem Materialkatalog auswählen (Farben/Streifen/
+    # Rohranzahl werden 1:1 übernommen) - oder, wie bisher, eine generische Rohranzahl angeben,
+    # die mit der festen ROHR_FARBEN-Palette befüllt wird. rohrverband_vorlage_id hat Vorrang.
+    rohrverband_vorlage_id: Optional[uuid.UUID] = None
+    anzahl_rohre: int = 0  # 0 = kein Rohrverband anlegen (nur relevant ohne rohrverband_vorlage_id)
     rohr_definition: RohrDefinition = RohrDefinition()
 
 
@@ -90,7 +95,22 @@ def create_trasse(
     db.flush()
 
     rohrverband_id = None
-    if payload.anzahl_rohre > 0:
+    if payload.rohrverband_vorlage_id:
+        vorlage = db.get(Rohrverbandvorlage, payload.rohrverband_vorlage_id)
+        if not vorlage or not vorlage.aktiv:
+            raise HTTPException(status_code=404, detail="Rohrverbandvorlage nicht gefunden oder inaktiv")
+        rv = Rohrverband(trasse_id=trasse.id, bezeichnung=f"RV-{trasse.name} ({vorlage.name})", vorlage_id=vorlage.id)
+        db.add(rv)
+        db.flush()
+        for pos in vorlage.positionen:
+            farbe = db.get(Farbe, pos.rohrfarbe_id)
+            db.add(Rohr(
+                rohrverband_id=rv.id, nummer=pos.position, farbe=farbe.hex_wert if farbe else "#999999",
+                farbe_id=pos.rohrfarbe_id, durchmesser_mm=pos.aussendurchmesser_mm,
+                typ=vorlage.produkt.produkttyp if vorlage.produkt else "Microduct", status=RohrStatus.frei,
+            ))
+        rohrverband_id = rv.id
+    elif payload.anzahl_rohre > 0:
         if payload.anzahl_rohre > len(ROHR_FARBEN):
             raise HTTPException(status_code=400, detail=f"Maximal {len(ROHR_FARBEN)} Rohre pro Rohrverband unterstützt")
         rv = Rohrverband(trasse_id=trasse.id, bezeichnung=f"RV-{trasse.name} ({payload.anzahl_rohre} {payload.rohr_definition.typ})")
@@ -181,6 +201,7 @@ class KabelCreateRedlining(BaseModel):
     rohr_id: uuid.UUID
     kabelanfang_id: Optional[uuid.UUID] = None
     kabelende_id: Optional[uuid.UUID] = None
+    kabel_vorlage_id: Optional[uuid.UUID] = None  # überschreibt typ/fasernanzahl/hersteller, falls gesetzt
     notizen: Optional[str] = None
 
 
@@ -201,17 +222,27 @@ def create_kabel(
         Rohrverband.id == rohr.rohrverband_id
     ).first()
 
+    vorlage = None
+    typ_wert, fasernanzahl, hersteller_name = payload.typ, payload.fasernanzahl, payload.hersteller
+    if payload.kabel_vorlage_id:
+        vorlage = db.get(Kabelvorlage, payload.kabel_vorlage_id)
+        if not vorlage or not vorlage.aktiv:
+            raise HTTPException(status_code=404, detail="Kabelvorlage nicht gefunden oder inaktiv")
+        typ_wert = vorlage.kabeltyp
+        fasernanzahl = vorlage.faseranzahl
+        hersteller_name = vorlage.produkt.produktfamilie.hersteller.name if vorlage.produkt else None
+
     try:
-        typ_enum = KabelTyp(payload.typ)
+        typ_enum = KabelTyp(typ_wert)
     except ValueError:
         raise HTTPException(status_code=400, detail="Ungültiger Kabeltyp")
 
     kabel = Kabel(
-        bezeichnung=payload.bezeichnung, typ=typ_enum, fasernanzahl=payload.fasernanzahl,
-        belegte_fasern=0, laenge_m=trasse.laenge_m if trasse else None, hersteller=payload.hersteller,
+        bezeichnung=payload.bezeichnung, typ=typ_enum, fasernanzahl=fasernanzahl,
+        belegte_fasern=0, laenge_m=trasse.laenge_m if trasse else None, hersteller=hersteller_name,
         status=ObjektStatus.geplant, geometrie=trasse.geometrie if trasse else None,
         kabelanfang_id=payload.kabelanfang_id, kabelende_id=payload.kabelende_id,
-        erstellt_von_id=user.id,
+        vorlage_id=vorlage.id if vorlage else None, erstellt_von_id=user.id,
     )
     db.add(kabel)
     db.flush()

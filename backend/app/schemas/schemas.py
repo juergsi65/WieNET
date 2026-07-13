@@ -80,6 +80,7 @@ class RohrOut(BaseModel):
     id: uuid.UUID
     nummer: int
     farbe: str
+    farbe_id: Optional[uuid.UUID] = None
     durchmesser_mm: Optional[float]
     typ: Optional[str]
     status: str

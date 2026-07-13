@@ -145,7 +145,12 @@ der Polygone via PostGIS `ST_Union`), Anzahl betroffener Trassen/Netzelemente un
 warnt, falls die gewählten Cluster unterschiedlichen Gebieten oder Projekten
 angehören. Nach Bestätigung werden alle zugeordneten Objekte (Trassen, Netzelemente,
 Cluster-Zuweisungen) transaktional auf den neuen Cluster umgehängt und die
-Quell-Cluster gelöscht.
+Quell-Cluster gelöscht. Wird beim Anlegen eines Clusters kein Gebiet ausgewählt,
+prüft das Backend per PostGIS `ST_Contains`, ob der Cluster-Schwerpunkt eindeutig
+innerhalb genau eines bestehenden Gebiets-Polygons liegt, und übernimmt dieses dann
+automatisch (Point-in-Polygon-Zuordnung, adaptiert aus dem Referenzprojekt
+FibreForge, dort für Entry -> Area). Bei keinem oder mehreren Treffern bleibt die
+Zuordnung bewusst leer statt falsch zu raten.
 
 ### Bewusst nicht enthalten (nächste Ausbaustufe)
 

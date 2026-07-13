@@ -11,7 +11,7 @@ from app.core.audit import log_action
 from app.core.permissions import require_global_permission, user_accessible_cluster_ids
 from app.core.numbering import get_active_schema, generate_nummer, scope_key_und_kontext
 from app.models.admin import (
-    Cluster, Permission, ObjektClusterZuordnung, ZuordnungsRelation,
+    Cluster, Gebiet, Permission, ObjektClusterZuordnung, ZuordnungsRelation,
 )
 from app.models.infrastructure import Trasse, Netzelement
 from app.models.user import User
@@ -67,11 +67,26 @@ def create_cluster(
     geom = geojson_to_multipolygon_ewkb(payload.geometrie)
     flaeche = db.scalar(func.ST_Area(func.ST_Transform(geom, 3857)))
 
+    gebiet_id = payload.gebiet_id
+    if gebiet_id is None:
+        # FibreForge-Idee (Point-in-Polygon-Zuordnung, siehe app.py: Entry -> Area):
+        # liegt der Cluster-Schwerpunkt eindeutig innerhalb genau eines Gebiets, wird
+        # dieses automatisch übernommen. Bei keinem oder mehreren Treffern bleibt es
+        # bewusst leer - eine falsche automatische Zuordnung wäre schlimmer als keine.
+        treffer = (
+            db.query(Gebiet.id)
+            .filter(Gebiet.geometrie.isnot(None))
+            .filter(func.ST_Contains(Gebiet.geometrie, func.ST_Centroid(geom)))
+            .all()
+        )
+        if len(treffer) == 1:
+            gebiet_id = treffer[0][0]
+
     nummer = payload.nummer
     schema = get_active_schema(db, "cluster")
     if schema:
         try:
-            scope_key, kontext = scope_key_und_kontext(db, schema.scope, gebiet_id=payload.gebiet_id, projekt_id=payload.project_id)
+            scope_key, kontext = scope_key_und_kontext(db, schema.scope, gebiet_id=gebiet_id, projekt_id=payload.project_id)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=f"Nummernvergabe fehlgeschlagen: {e}")
         nummer = generate_nummer(db, schema, scope_key, kontext)
@@ -79,7 +94,7 @@ def create_cluster(
     c = Cluster(
         name=payload.name, nummer=nummer, kuerzel=payload.kuerzel, beschreibung=payload.beschreibung,
         typ=payload.typ, status=payload.status, geometrie=geom, flaeche_m2=flaeche,
-        farbe=payload.farbe, prioritaet=payload.prioritaet, gebiet_id=payload.gebiet_id,
+        farbe=payload.farbe, prioritaet=payload.prioritaet, gebiet_id=gebiet_id,
         project_id=payload.project_id, projektleiter_id=payload.projektleiter_id,
         planer_id=payload.planer_id, baufirma=payload.baufirma, start_datum=payload.start_datum,
         geplantes_ende=payload.geplantes_ende, budget=payload.budget, ausbauziel=payload.ausbauziel,

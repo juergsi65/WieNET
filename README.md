@@ -172,7 +172,11 @@ Nach dem Start: `http://<Server-IP>:8093/docs` (interaktive OpenAPI/Swagger-Doku
 
 ## Sicherheitshinweise
 
-- Passwörter ausschließlich als bcrypt-Hash gespeichert
+- Passwörter ausschließlich als bcrypt-Hash gespeichert (`bcrypt` in
+  `backend/requirements.txt` bewusst auf `4.0.1` gepinnt - neuere `bcrypt`-Versionen
+  entfernen ein von `passlib` 1.7.4 zur Backend-Erkennung genutztes Attribut, wodurch
+  jedes Hashing/Verifizieren inkl. Admin-Bootstrap und Login sonst mit einem Fehler
+  abbricht)
 - Authentifizierung über JWT, Ablaufzeit konfigurierbar (`ACCESS_TOKEN_EXPIRE_MINUTES`)
 - Kontosperrung nach 5 fehlgeschlagenen Login-Versuchen
 - Keine Ports außer 8093 werden nach außen geöffnet
@@ -181,6 +185,18 @@ Nach dem Start: `http://<Server-IP>:8093/docs` (interaktive OpenAPI/Swagger-Doku
 - Rollenbasierte und granulare (Gebiet/Cluster/Projekt) Zugriffskontrolle wird
   serverseitig bei jedem Endpunkt geprüft, nicht nur im Frontend ausgeblendet
 - Vollständiges Audit-Log für sicherheitsrelevante Aktionen
+
+## Betriebshinweis: Kartendarstellung und Internetzugang
+
+Trassen, Netzelemente und Cluster werden vollständig selbst gehostet (PostgreSQL/
+PostGIS → FastAPI → Karte) und benötigen keinerlei externe Server, um zuverlässig
+sichtbar zu sein. Lediglich die **Kachelbilder der Hintergrundkarte** stammen von
+`tile.openstreetmap.org` und benötigen ausgehenden Internetzugang vom Browser des
+Benutzers aus; ist dieser eingeschränkt, langsam oder durch eine Firewall/einen
+Werbeblocker blockiert, bleibt nur der Kartenhintergrund leer/grau - eigene Daten
+(Trassen, Schächte, Muffen, Verteiler, Cluster) werden davon unabhängig sofort
+geladen und angezeigt. Schriftarten und die MapLibre-CSS werden mit der Anwendung
+ausgeliefert und nicht mehr von externen CDNs nachgeladen.
 
 ## Datenmodell
 

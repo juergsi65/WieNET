@@ -25,7 +25,7 @@ export default function RedliningToolbar({
   if (!canEdit) return null;
 
   return (
-    <div className="absolute top-3 left-3 z-10 bg-white/95 dark:bg-slate-800/95 backdrop-blur rounded-lg shadow-panel border border-ink-100 dark:border-slate-700 p-2 flex items-center gap-1.5 text-xs">
+    <div className="absolute top-3 left-3 right-3 sm:right-auto z-10 bg-white/95 dark:bg-slate-800/95 backdrop-blur rounded-lg shadow-panel border border-ink-100 dark:border-slate-700 p-2 flex items-center gap-1.5 text-xs overflow-x-auto max-w-full sm:max-w-none">
       <span className="text-ink-400 font-medium uppercase tracking-wide px-1.5 hidden sm:inline">Redlining</span>
 
       <button

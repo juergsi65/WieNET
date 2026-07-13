@@ -78,6 +78,7 @@ export default function DetailPanel({ typ, id, onClose, canEdit = false }: Props
           </div>
 
           <dl className="text-sm grid grid-cols-2 gap-y-1.5">
+            <dt className="text-slate-400">ID</dt><dd className="truncate font-mono text-xs" title={data.id}>{data.id}</dd>
             {data.laenge_m != null && (<><dt className="text-slate-400">Länge</dt><dd>{data.laenge_m} m</dd></>)}
             {data.verlegetiefe_cm != null && (<><dt className="text-slate-400">Verlegetiefe</dt><dd>{data.verlegetiefe_cm} cm</dd></>)}
             {data.oberflaeche && (<><dt className="text-slate-400">Oberfläche</dt><dd>{data.oberflaeche}</dd></>)}
@@ -90,6 +91,9 @@ export default function DetailPanel({ typ, id, onClose, canEdit = false }: Props
             {data.ports_gesamt != null && (
               <><dt className="text-slate-400">Ports belegt</dt><dd>{data.ports_belegt}/{data.ports_gesamt}</dd></>
             )}
+            {("projekt_name" in data) && (<><dt className="text-slate-400">Projekt</dt><dd>{data.projekt_name ?? "nicht vorhanden"}</dd></>)}
+            {("cluster_name" in data) && (<><dt className="text-slate-400">Cluster</dt><dd>{data.cluster_name ?? "nicht vorhanden"}</dd></>)}
+            {typ === "trasse" && (<><dt className="text-slate-400">Bauabschnitt</dt><dd>{data.bauabschnitt_name ?? "nicht vorhanden"}</dd></>)}
           </dl>
 
           {data.notizen && (
@@ -99,18 +103,28 @@ export default function DetailPanel({ typ, id, onClose, canEdit = false }: Props
             </div>
           )}
 
-          {typ === "trasse" && data.rohrverbaende?.length > 0 && (
+          {typ === "trasse" && (
             <div>
-              <button
-                onClick={() => setShowRohrbelegung((v) => !v)}
-                className="w-full bg-brand-50 dark:bg-slate-700 text-brand-700 dark:text-brand-300 rounded-lg py-2 text-sm font-medium"
-              >
-                {showRohrbelegung ? "Rohrbelegung ausblenden" : "Rohrbelegung anzeigen"}
-              </button>
-              {showRohrbelegung && (
-                <div className="mt-3">
-                  <RohrQuerschnitt trasseId={id} canEdit={canEdit} />
-                </div>
+              <dl className="text-sm grid grid-cols-2 gap-y-1.5 mb-2">
+                <dt className="text-slate-400">Rohre</dt>
+                <dd>{data.rohrverbaende?.length > 0
+                  ? data.rohrverbaende.reduce((n: number, r: any) => n + r.anzahl_rohre, 0)
+                  : "nicht vorhanden"}</dd>
+              </dl>
+              {data.rohrverbaende?.length > 0 && (
+                <>
+                  <button
+                    onClick={() => setShowRohrbelegung((v) => !v)}
+                    className="w-full bg-brand-50 dark:bg-slate-700 text-brand-700 dark:text-brand-300 rounded-lg py-2 text-sm font-medium"
+                  >
+                    {showRohrbelegung ? "Rohr-/Kabelbelegung ausblenden" : "Rohr-/Kabelbelegung anzeigen"}
+                  </button>
+                  {showRohrbelegung && (
+                    <div className="mt-3">
+                      <RohrQuerschnitt trasseId={id} canEdit={canEdit} />
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

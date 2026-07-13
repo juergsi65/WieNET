@@ -10,6 +10,7 @@ from app.core.security import get_current_user
 from app.models.infrastructure import (
     Trasse, Netzelement, Rohr, RohrStatus, Kabel, Stoerung, Bauabschnitt, ObjektStatus
 )
+from app.models.admin import Cluster, Projekt
 from app.schemas.schemas import DashboardStats, SearchResult
 
 router = APIRouter(prefix="/api", tags=["objekte"])
@@ -41,6 +42,9 @@ def get_objekt_detail(objekt_typ: str, objekt_id: uuid.UUID, db: Session = Depen
             raise HTTPException(status_code=404, detail="Nicht gefunden")
         geom = json.loads(db.scalar(func.ST_AsGeoJSON(obj.geometrie)))
         ersteller_name = obj.erstellt_von.full_name if obj.erstellt_von else None
+        cluster = db.get(Cluster, obj.cluster_id) if obj.cluster_id else None
+        projekt = db.get(Projekt, cluster.project_id) if (cluster and cluster.project_id) else None
+        bauabschnitt = obj.bauabschnitt
         return {
             "id": str(obj.id), "typ": "trasse", "name": obj.name, "status": obj.status.value,
             "verlegetiefe_cm": obj.verlegetiefe_cm, "oberflaeche": obj.oberflaeche,
@@ -48,6 +52,12 @@ def get_objekt_detail(objekt_typ: str, objekt_id: uuid.UUID, db: Session = Depen
             "ist_planung": obj.status.value == "geplant",
             "erstellt_von": ersteller_name,
             "planungskennzeichen": f"Planung_{ersteller_name}" if (obj.status.value == "geplant" and ersteller_name) else None,
+            "cluster_id": str(obj.cluster_id) if obj.cluster_id else None,
+            "cluster_name": cluster.name if cluster else None,
+            "projekt_id": str(projekt.id) if projekt else None,
+            "projekt_name": projekt.name if projekt else None,
+            "bauabschnitt_id": str(obj.bauabschnitt_id) if obj.bauabschnitt_id else None,
+            "bauabschnitt_name": bauabschnitt.name if bauabschnitt else None,
             "rohrverbaende": [{"id": str(r.id), "bezeichnung": r.bezeichnung, "anzahl_rohre": len(r.rohre)}
                                for r in obj.rohrverbaende],
         }
@@ -57,6 +67,8 @@ def get_objekt_detail(objekt_typ: str, objekt_id: uuid.UUID, db: Session = Depen
             raise HTTPException(status_code=404, detail="Nicht gefunden")
         geom = json.loads(db.scalar(func.ST_AsGeoJSON(obj.geometrie)))
         ersteller_name = obj.erstellt_von.full_name if obj.erstellt_von else None
+        cluster = db.get(Cluster, obj.cluster_id) if obj.cluster_id else None
+        projekt = db.get(Projekt, cluster.project_id) if (cluster and cluster.project_id) else None
         return {
             "id": str(obj.id), "typ": obj.typ.value, "name": obj.name, "status": obj.status.value,
             "adresse": obj.adresse, "gemeinde": obj.gemeinde, "baujahr": obj.baujahr,
@@ -64,6 +76,10 @@ def get_objekt_detail(objekt_typ: str, objekt_id: uuid.UUID, db: Session = Depen
             "modell": obj.modell, "notizen": obj.notizen, "geometrie": geom,
             "ports_gesamt": obj.ports_gesamt, "ports_belegt": obj.ports_belegt,
             "parent_id": str(obj.parent_id) if obj.parent_id else None,
+            "cluster_id": str(obj.cluster_id) if obj.cluster_id else None,
+            "cluster_name": cluster.name if cluster else None,
+            "projekt_id": str(projekt.id) if projekt else None,
+            "projekt_name": projekt.name if projekt else None,
             "ist_planung": obj.status.value == "geplant",
             "erstellt_von": ersteller_name,
             "planungskennzeichen": f"Planung_{ersteller_name}" if (obj.status.value == "geplant" and ersteller_name) else None,

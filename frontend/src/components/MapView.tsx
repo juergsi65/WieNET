@@ -83,7 +83,16 @@ export default function MapView({ onSelect, canEdit }: Props) {
     map.addControl(new maplibregl.NavigationControl(), "top-right");
     mapRef.current = map;
 
-    map.on("load", () => {
+    // WICHTIG: "style.load" statt "load" verwenden. Das "load"-Event von MapLibre GL
+    // wartet zusätzlich auf den ersten visuell vollständigen Render-Durchlauf inkl. der
+    // Basiskarten-Kacheln (externer OSM-Tile-Server) - ist dieser langsam, blockiert,
+    // durch Firewall/Proxy eingeschränkt oder durch Rate-Limiting der OSM-Nutzungsrichtlinie
+    // betroffen, verzögert sich dadurch das Einhängen der Trassen-/Netzelement-Quellen und
+    // das Laden der eigenen (vom Kachel-Server unabhängigen) Daten um viele Sekunden bis hin
+    // zu "Trassen werden nicht angezeigt". "style.load" feuert dagegen, sobald die
+    // Style-Definition (Quellen/Ebenen-Spezifikation) verarbeitet ist, unabhängig vom
+    // Ladezustand externer Kachelbilder - addSource/addLayer sind ab diesem Zeitpunkt sicher.
+    map.once("style.load", () => {
       map.addSource("clusters", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       map.addLayer({
         id: "clusters-fill", type: "fill", source: "clusters",
